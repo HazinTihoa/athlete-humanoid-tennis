@@ -1,0 +1,8 @@
+# Installed into deploy/.venv with the system Python 3.12 used by ROS 2 Jazzy.
+h5py
+mujoco
+numpy
+onnx
+onnxruntime
+PyYAML
+scipy

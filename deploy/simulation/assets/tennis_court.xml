@@ -1,0 +1,68 @@
+<mujoco model="tennis_trajectory_demo">
+  <compiler angle="degree" autolimits="true"/>
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="RK4" iterations="50" cone="elliptic"/>
+  <size njmax="500" nconmax="200"/>
+
+  <visual>
+    <global offwidth="1280" offheight="720" azimuth="135" elevation="-28"/>
+    <quality shadowsize="4096" offsamples="4"/>
+    <map znear="0.02" zfar="80" fogstart="30" fogend="55"/>
+    <rgba haze="0.78 0.86 0.92 1"/>
+  </visual>
+
+  <statistic center="0 0 0.7" extent="14"/>
+
+  <default>
+    <geom condim="3" friction="0.65 0.01 0.0001" solref="0.006 0.155" solimp="0.92 0.98 0.002"/>
+    <default class="visual">
+      <geom contype="0" conaffinity="0" group="1"/>
+    </default>
+  </default>
+
+  <asset>
+    <texture name="sky" type="skybox" builtin="gradient" rgb1="0.68 0.82 0.92" rgb2="0.96 0.97 0.96" width="512" height="3072"/>
+    <texture name="ground_tex" type="2d" builtin="checker" rgb1="0.18 0.24 0.20" rgb2="0.15 0.20 0.17" width="512" height="512"/>
+    <material name="ground_mat" texture="ground_tex" texrepeat="8 8" texuniform="true" reflectance="0.05"/>
+    <material name="court_mat" rgba="0.08 0.31 0.35 1" specular="0.08" shininess="0.15"/>
+    <material name="line_mat" rgba="0.96 0.97 0.94 1" emission="0.05"/>
+    <material name="net_mat" rgba="0.08 0.10 0.11 0.34"/>
+    <material name="post_mat" rgba="0.82 0.84 0.82 1" specular="0.35" shininess="0.5"/>
+    <material name="ball_mat" rgba="0.78 0.92 0.12 1" specular="0.25" shininess="0.4"/>
+  </asset>
+
+  <worldbody>
+    <light name="key" pos="-6 -5 12" dir="0.35 0.25 -1" diffuse="0.95 0.93 0.88" castshadow="true"/>
+    <light name="fill" pos="8 7 8" dir="-0.4 -0.3 -1" diffuse="0.45 0.50 0.55" castshadow="false"/>
+
+    <geom name="surround" type="plane" pos="0 0 -0.035" size="35 25 0.1" material="ground_mat" friction="0.8 0.01 0.0001"/>
+    <geom name="court_surface" type="box" pos="0 0 -0.015" size="11.885 5.485 0.015" material="court_mat" friction="0.62 0.015 0.0002"/>
+
+    <!-- ITF court dimensions: 23.77 m x 10.97 m, singles width 8.23 m. -->
+    <geom class="visual" name="baseline_near" type="box" pos="-11.86 0 0.004" size="0.025 5.485 0.004" material="line_mat"/>
+    <geom class="visual" name="baseline_far" type="box" pos="11.86 0 0.004" size="0.025 5.485 0.004" material="line_mat"/>
+    <geom class="visual" name="doubles_side_left" type="box" pos="0 -5.46 0.004" size="11.885 0.025 0.004" material="line_mat"/>
+    <geom class="visual" name="doubles_side_right" type="box" pos="0 5.46 0.004" size="11.885 0.025 0.004" material="line_mat"/>
+    <geom class="visual" name="singles_side_left" type="box" pos="0 -4.09 0.004" size="11.885 0.025 0.004" material="line_mat"/>
+    <geom class="visual" name="singles_side_right" type="box" pos="0 4.09 0.004" size="11.885 0.025 0.004" material="line_mat"/>
+    <geom class="visual" name="service_line_near" type="box" pos="-6.40 0 0.004" size="0.025 4.115 0.004" material="line_mat"/>
+    <geom class="visual" name="service_line_far" type="box" pos="6.40 0 0.004" size="0.025 4.115 0.004" material="line_mat"/>
+    <geom class="visual" name="center_service_line" type="box" pos="0 0 0.004" size="6.40 0.025 0.004" material="line_mat"/>
+    <geom class="visual" name="center_mark_near" type="box" pos="-11.68 0 0.004" size="0.18 0.025 0.004" material="line_mat"/>
+    <geom class="visual" name="center_mark_far" type="box" pos="11.68 0 0.004" size="0.18 0.025 0.004" material="line_mat"/>
+
+    <!-- The translucent net panel is collidable; the white tape and mesh lines are visual. -->
+    <geom name="net_collision" type="box" pos="0 0 0.457" size="0.018 5.485 0.457" material="net_mat" friction="0.25 0.005 0.0001"/>
+    <geom class="visual" name="net_tape" type="box" pos="0 0 0.914" size="0.03 5.52 0.025" material="line_mat"/>
+    <geom class="visual" name="net_post_left" type="cylinder" pos="0 -5.55 0.535" size="0.045 0.535" material="post_mat"/>
+    <geom class="visual" name="net_post_right" type="cylinder" pos="0 5.55 0.535" size="0.045 0.535" material="post_mat"/>
+    <geom class="visual" name="net_horizontal_1" type="box" pos="0 0 0.23" size="0.021 5.485 0.006" material="post_mat"/>
+    <geom class="visual" name="net_horizontal_2" type="box" pos="0 0 0.46" size="0.021 5.485 0.006" material="post_mat"/>
+    <geom class="visual" name="net_horizontal_3" type="box" pos="0 0 0.69" size="0.021 5.485 0.006" material="post_mat"/>
+
+    <body name="tennis_ball" pos="-6.4 -1.5 1.2">
+      <freejoint name="ball_freejoint"/>
+      <geom name="ball_geom" type="sphere" size="0.0335" mass="0.057" material="ball_mat" friction="0.55 0.02 0.002" solref="0.005 0.155" solimp="0.93 0.99 0.001"/>
+      <site name="ball_center" type="sphere" size="0.005" rgba="1 1 1 0.7"/>
+    </body>
+  </worldbody>
+</mujoco>

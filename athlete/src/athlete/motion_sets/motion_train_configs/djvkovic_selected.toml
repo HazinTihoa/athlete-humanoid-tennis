@@ -1,0 +1,37 @@
+# Six selected video-derived G1 tennis strikes from data/djvkovic_npz_data_v5.
+
+[robot]
+xml = "robots/training/g1_27dof_training_tennis.xml"
+
+[registry]
+train_prefix = ""
+
+[[motions]]
+name = "mle_forehand_8"
+enabled = true
+file = "data/djvkovic_npz_data_v5/fh_08_g1.npz"
+
+[[motions]]
+name = "mle_forehand_8"
+enabled = true
+file = "data/djvkovic_npz_data_v5/fh_22_g1.npz"
+
+[[motions]]
+name = "mle_forehand_8"
+enabled = true
+file = "data/djvkovic_npz_data_v5/fh_68_g1.npz"
+
+[[motions]]
+name = "mle_backhand_9"
+enabled = true
+file = "data/djvkovic_npz_data_v5/bh_43_g1.npz"
+
+[[motions]]
+name = "mle_backhand_9"
+enabled = true
+file = "data/djvkovic_npz_data_v5/bh_08_g1.npz"
+
+[[motions]]
+name = "mle_backhand_9"
+enabled = true
+file = "data/djvkovic_npz_data_v5/bh_04_g1.npz"

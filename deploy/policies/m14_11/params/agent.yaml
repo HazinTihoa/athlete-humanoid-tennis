@@ -1,0 +1,113 @@
+seed: 42
+num_steps_per_env: 24
+max_iterations: 20000
+obs_groups:
+  actor: !!python/tuple
+  - student
+  critic: !!python/tuple
+  - critic
+  teacher: !!python/tuple
+  - actor
+save_interval: 500
+experiment_name: g1_tracking_tppo
+run_name: m14-11_globalroot005_rootlanding_balldelay20std10_sweetrelative_small16500_8192env_add20000iter
+logger: tensorboard
+wandb_project: mjlab
+wandb_tags: !!python/tuple []
+resume: true
+load_run: 2026-09-05_23-34-45_m9-7_smallcourt_failuretraj05_redistill_resume16000_add14000_gpu1
+load_checkpoint: model_16500_globalroot.pt
+clip_actions: null
+upload_model: true
+class_name: OnPolicyRunner
+actor:
+  hidden_dims: !!python/tuple
+  - 512
+  - 256
+  - 128
+  activation: elu
+  obs_normalization: true
+  cnn_cfg: null
+  distribution_cfg:
+    class_name: GaussianDistribution
+    init_std: 1.0
+    std_type: scalar
+  rnn_type: null
+  rnn_hidden_dim: 256
+  rnn_num_layers: 1
+  class_name: athlete.goal_cond_tracking.rl.intent_transformer.IntentTransformerActor
+  state_history_group: intent_state_history
+  ball_history_group: intent_ball_history
+  reference_future_group: intent_reference_future
+  state_history_steps: 5
+  state_token_dim: 93
+  ball_history_steps: 5
+  ball_token_dim: 6
+  reference_steps: 12
+  reference_token_dim: 58
+  intent_latent_dim: 128
+  transformer_heads: 4
+  transformer_layers: 2
+  transformer_ff_dim: 256
+critic:
+  hidden_dims: !!python/tuple
+  - 512
+  - 256
+  - 128
+  activation: elu
+  obs_normalization: true
+  cnn_cfg: null
+  distribution_cfg: null
+  rnn_type: null
+  rnn_hidden_dim: 256
+  rnn_num_layers: 1
+  class_name: athlete.goal_cond_tracking.rl.intent_transformer.IntentTransformerCritic
+  intent_latent_dim: 128
+algorithm:
+  num_learning_epochs: 3
+  num_mini_batches: 4
+  learning_rate: 0.001
+  schedule: adaptive
+  gamma: 0.99
+  lam: 0.95
+  entropy_coef: 0.005
+  desired_kl: 0.01
+  max_grad_norm: 1.0
+  value_loss_coef: 1.0
+  use_clipped_value_loss: true
+  clip_param: 0.2
+  normalize_advantage_per_mini_batch: false
+  optimizer: adam
+  share_cnn_encoders: false
+  class_name: athlete.goal_cond_tracking.rl.intent_tppo.IntentTPPO
+  teacher_checkpoint: logs/rsl_rl/g1_tracking/2026-07-21_20-08-17_rollout1000_first200_deadlineproj_continuous_boundaryfix_30000iter_8192pergpu_m14_gpu1-2/model_29999.pt
+  teacher_act_prob: 0.0
+  update_times_scale: 3000
+  using_ppo: true
+  distillation_loss_coef: 0.05
+  distillation_update_times_scale: null
+  distillation_min_coef: 0.05
+  distill_target: real
+  action_labels_from_sample: false
+  strict_teacher_checkpoint: true
+  student_action_dim: 29
+  intent_reference_loss_coef: 0.0
+  intent_teacher_action_loss_coef: 0.0
+  intent_latent_loss_coef: 0.0
+  freeze_intent_encoders: true
+teacher:
+  hidden_dims: !!python/tuple
+  - 512
+  - 256
+  - 128
+  activation: elu
+  obs_normalization: true
+  cnn_cfg: null
+  distribution_cfg:
+    class_name: GaussianDistribution
+    init_std: 1.0
+    std_type: scalar
+  rnn_type: null
+  rnn_hidden_dim: 256
+  rnn_num_layers: 1
+  class_name: MLPModel

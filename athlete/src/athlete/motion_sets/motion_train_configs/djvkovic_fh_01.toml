@@ -1,0 +1,15 @@
+# A single video-derived G1 forehand from data/djvkovic_npz_data_v5; the sidecar
+# fh_01_g1.json next to the clip provides strike_frame metadata.
+
+[robot]
+xml = "robots/replay_unitree_description/mjcf/g1.xml"
+
+[registry]
+train_prefix = ""
+
+[[motions]]
+name = "djvkovic_fh_01_forehand"
+enabled = true
+file = "data/djvkovic_npz_data_v5/fh_01_g1.npz"
+target_from_strike_site = "racket_sweet_spot"
+target_anchor_body = "pelvis"

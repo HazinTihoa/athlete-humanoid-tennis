@@ -1,0 +1,117 @@
+xml_path: "deployment/g1_27dof_deploy_tennis.xml"
+
+policy_path: "logs/rsl_rl/g1_tracking/six_motions_4.onnx"
+
+motion_paths:
+  - "artifacts/forehand_fast:v0/motion.npz"
+  - "artifacts/backhand_fast:v0/motion.npz"
+  - "artifacts/two_step_forehand_fast:v0/motion.npz"
+  - "artifacts/two_step_backhand_fast:v0/motion.npz"
+  - "artifacts/stepback_forehand_fast:v0/motion.npz"
+  - "artifacts/stepback_backhand_fast:v0/motion.npz"
+
+home_pos_duration: 3.0
+
+# PD gains per joint (29 DOF)
+Kp: [40.179, 99.098, 40.179, 99.098, 28.501, 28.501,
+     40.179, 99.098, 40.179, 99.098, 28.501, 28.501,
+     40.179, 28.501, 28.501,
+     14.251, 14.251, 14.251, 14.251, 14.251, 16.778, 16.778,
+     14.251, 14.251, 14.251, 14.251, 14.251, 16.778, 16.778]
+Kd: [2.558, 6.309, 2.558, 6.309, 1.814, 1.814,
+     2.558, 6.309, 2.558, 6.309, 1.814, 1.814,
+     2.558, 1.814, 1.814,
+     0.907, 0.907, 0.907, 0.907, 0.907, 1.068, 1.068,
+     0.907, 0.907, 0.907, 0.907, 0.907, 1.068, 1.068]
+
+default_base_pos: [0, 0, 0.78, 1, 0, 0, 0]
+default_joint_pos: [-0.312, 0.0, 0.0, 0.669, -0.363, 0.0,
+                    -0.312, 0.0, 0.0, 0.669, -0.363, 0.0,
+                     0.0, 0.0, 0.0,
+                     0.2,  0.2, 0.0, 0.6, 0.0, 0.0, 0.0,
+                     0.2, -0.2, 0.0, 0.6, 0.0, 0.0, 0.0]
+
+action_scale: [0.548, 0.351, 0.548, 0.351, 0.439, 0.439,
+               0.548, 0.351, 0.548, 0.351, 0.439, 0.439,
+               0.548, 0.439, 0.439,
+               0.439, 0.439, 0.439, 0.439, 0.439, 0.075, 0.075,
+               0.439, 0.439, 0.439, 0.439, 0.439, 0.075, 0.075]
+
+control_dt: 0.02
+contact_phase: [0.381, 0.383, 0.423, 0.448, 0.351, 0.398]
+contact_duration: 1.0
+ball_launch_velocity: [-2.0, 0.0, 3.0]
+
+goals:
+  - name: "forehand_position"
+    type: "position"
+    vector: [0.5, -0.6, 0.0]
+    motion_index: 0
+  - name: "forehand_velocity"
+    type: "velocity"
+    vector: [1.0, 0.0, 0.0]
+    motion_index: 0
+  - name: "forehand_orientation"
+    type: "orientation"
+    vector: [0.0, 0.0, -1.571]
+    motion_index: 0
+  - name: "backhand_position"
+    type: "position"
+    vector: [0.5, 0.6, 0.0]
+    motion_index: 1
+  - name: "backhand_velocity"
+    type: "velocity"
+    vector: [1.0, 0.0, 0.0]
+    motion_index: 1
+  - name: "backhand_orientation"
+    type: "orientation"
+    vector: [0.0, 0.0, 1.571]
+    motion_index: 1
+  - name: "two_step_forehand_position"
+    type: "position"
+    vector: [0.5, -1.1, 0.0]
+    motion_index: 2
+  - name: "two_step_forehand_velocity"
+    type: "velocity"
+    vector: [1.0, 0.0, 0.0]
+    motion_index: 2
+  - name: "two_step_forehand_orientation"
+    type: "orientation"
+    vector: [0.0, 0.0, -1.571]
+    motion_index: 2
+  - name: "two_step_backhand_position"
+    type: "position"
+    vector: [0.5, 1.1, 0.0]
+    motion_index: 3
+  - name: "two_step_backhand_velocity"
+    type: "velocity"
+    vector: [1.0, 0.0, 0.0]
+    motion_index: 3
+  - name: "two_step_backhand_orientation"
+    type: "orientation"
+    vector: [0.0, 0.0, 1.571]
+    motion_index: 3
+  - name: "stepback_forehand_position"
+    type: "position"
+    vector: [0.5, -0.1, 0.0]
+    motion_index: 4
+  - name: "stepback_forehand_velocity"
+    type: "velocity"
+    vector: [1.0, 0.0, 0.0]
+    motion_index: 4
+  - name: "stepback_forehand_orientation"
+    type: "orientation"
+    vector: [0.0, 0.0, -1.571]
+    motion_index: 4
+  - name: "stepback_backhand_position"
+    type: "position"
+    vector: [0.5, 0.1, 0.0]
+    motion_index: 5
+  - name: "stepback_backhand_velocity"
+    type: "velocity"
+    vector: [1.0, 0.0, 0.0]
+    motion_index: 5
+  - name: "stepback_backhand_orientation"
+    type: "orientation"
+    vector: [0.0, 0.0, 1.571]
+    motion_index: 5

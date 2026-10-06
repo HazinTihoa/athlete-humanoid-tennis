@@ -1,0 +1,20 @@
+**/__pycache__/
+**/*.pyc
+MUJOCO_LOG.TXT
+artifacts/
+data/generated/
+logs/
+wandb/
+/deploy/.venv/
+/deploy/.build/
+/deploy/recordings/
+
+athlete/videos/*
+athlete/**/.mp4
+**/*.mp4
+
+# Local editor indexes and generated inspection files.
+**/.vscode/browse.vc.db*
+exec-*.png
+*.orig
+

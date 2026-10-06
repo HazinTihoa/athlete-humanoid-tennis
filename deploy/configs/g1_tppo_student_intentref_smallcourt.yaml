@@ -1,0 +1,140 @@
+policy_type: "intent_628"
+# Deployed policy: the Student ONNX exported from m11-9 model_48500.
+policy_path: "logs/rsl_rl/g1_tracking_tppo/2026-09-02_21-47-46_m11-9_smallcourt_frozenintent_epoch3_actionrate020_sweetspeedscale03_model26000_8192env_add50000iter/2026-09-02_21-47-46_m11-9_smallcourt_frozenintent_epoch3_actionrate020_sweetspeedscale03_model26000_8192env_add50000iter.onnx"
+expected_observation_dim: 628
+# For the BallObsRobust ONNX set policy_type: "intent_638" and expected_observation_dim: 638,
+# and point policy_path at the matching 638-D model; the rest of the sim/real observation interface is unchanged.
+
+# In sim the policy runs every 8 physics steps of simulated time; on the real robot it runs at 50 Hz wall clock.
+control_dt: 0.02
+landing_target_startup: [6.0, 0.0]
+history_buffer_length: 25
+history_lags: [20, 15, 10, 5, 0]
+
+mocap_bridge:
+  input_topic: "/rigid_bodies"
+  world_frame: "world"
+  pelvis_name: "G1_pelvis"
+  ball_name: "Ball"
+  output_rate_hz: 50.0
+  pelvis_startup_grace_s: 10.0
+  pelvis_timeout_s: 0.040
+  pelvis_recovery_s: 0.20
+  pelvis_max_mean_error_m: 0.005
+  ball_max_mean_error_m: 0.010
+  damp_republish_s: 0.10
+  status_publish_s: 0.20
+  visualization_enabled: true
+  visualization_topic: "/mocap_policy_bridge/markers"
+  trajectory_duration_s: 5.0
+  pelvis_axis_length_m: 0.30
+  velocity_arrow_scale_s: 0.10
+  velocity_window_size: 7
+  velocity_min_samples: 5
+  ball_short_dropout_s: 0.10
+  ball_maximum_prediction_s: 2.0
+  ball_reassociation_timeout_s: 0.50
+  ball_static_speed_threshold_mps: 0.15
+  ball_static_hold_s: 0.15
+  ball_maximum_speed_mps: 40.0
+  ball_position_correction_gain: 0.80
+  ball_velocity_correction_gain: 0.55
+  ball_integration_dt_s: 0.0025
+  ground_height_m: 0.0
+  court_restitution: 0.745
+  ground_tangent_speed_retention: 0.825
+
+simulation_xml_path: "robots/replay_unitree_description/mjcf/g1.xml"
+tennis_court_xml_path: "deploy/simulation/assets/tennis_court.xml"
+kinematics_xml_path: "robots/replay_unitree_description/mjcf/g1.xml"
+sweet_spot_site: "racket_sweet_spot"
+sweet_spot_velocity_smoothing: 0.35
+
+
+state_timeout_s: 0.25
+# The next three fields only affect the 638-D BallObsRobust policy. Inference continues through short observation dropouts; commands stop only after the hard timeout.
+ball_observation_valid_timeout_s: 0.03
+ball_observation_hard_timeout_s: 0.50
+ball_observation_nominal_latency_s: 0.0
+command_timeout_s: 0.10
+damp_kd: 3.0
+safety_max_tilt_deg: 60.0
+gain_source: "onnx"
+home_pos_duration: 3.0
+
+joint_names: "left_hip_pitch_joint,left_hip_roll_joint,left_hip_yaw_joint,left_knee_joint,left_ankle_pitch_joint,left_ankle_roll_joint,right_hip_pitch_joint,right_hip_roll_joint,right_hip_yaw_joint,right_knee_joint,right_ankle_pitch_joint,right_ankle_roll_joint,waist_yaw_joint,waist_roll_joint,waist_pitch_joint,left_shoulder_pitch_joint,left_shoulder_roll_joint,left_shoulder_yaw_joint,left_elbow_joint,left_wrist_roll_joint,left_wrist_pitch_joint,left_wrist_yaw_joint,right_shoulder_pitch_joint,right_shoulder_roll_joint,right_shoulder_yaw_joint,right_elbow_joint,right_wrist_roll_joint,right_wrist_pitch_joint,right_wrist_yaw_joint"
+
+default_base_pos: [0.0, 0.0, 0.76, 1.0, 0.0, 0.0, 0.0]
+default_joint_pos: [-0.312, 0.0, 0.0, 0.669, -0.363, 0.0,
+                    -0.312, 0.0, 0.0, 0.669, -0.363, 0.0,
+                     0.0, 0.0, 0.0,
+                     0.2, 0.2, 0.0, 0.6, 0.0, 0.0, 0.0,
+                     0.2, -0.2, 0.0, 0.6, 0.0, 0.0, 0.0]
+Kp: [40.179, 99.098, 40.179, 99.098, 28.501, 28.501,
+     40.179, 99.098, 40.179, 99.098, 28.501, 28.501,
+     40.179, 28.501, 28.501,
+     14.251, 14.251, 14.251, 14.251, 14.251, 16.778, 16.778,
+     14.251, 14.251, 14.251, 14.251, 14.251, 16.778, 16.778]
+Kd: [2.558, 6.309, 2.558, 6.309, 1.814, 1.814,
+     2.558, 6.309, 2.558, 6.309, 1.814, 1.814,
+     2.558, 1.814, 1.814,
+     0.907, 0.907, 0.907, 0.907, 0.907, 1.068, 1.068,
+     0.907, 0.907, 0.907, 0.907, 0.907, 1.068, 1.068]
+
+
+simulation:
+  physics_dt: 0.0025
+  sensor_publish_dt: 0.01
+  court:
+    net_x_m: 3.5
+    net_height_m: 0.914
+    net_half_width_m: 2.5
+  # Sampled once when each sim process starts, equivalent to one parallel env during training.
+  physics_domain_randomization:
+    enabled: true
+    random_seed: 1
+    ball_mass_kg: [0.0560, 0.0594]
+    court_restitution: [0.70, 0.80]
+    ground_tangent_speed_retention: [0.75, 0.90]
+    drag_coefficient: [0.50, 0.65]
+    racket_mass_kg: [0.27, 0.33]
+    racket_restitution: [0.54, 0.68]
+    racket_com_offset_x_m: [-0.015, 0.015]
+    racket_com_offset_y_m: [-0.010, 0.010]
+    racket_com_offset_z_m: [-0.015, 0.015]
+    torso_com_offset_x_m: [-0.025, 0.025]
+    torso_com_offset_y_m: [-0.050, 0.050]
+    torso_com_offset_z_m: [-0.050, 0.050]
+    foot_sliding_friction: [0.30, 1.20]
+  incoming_ball:
+    random_seed: 0
+    launch_wait_range_s: [0.5, 1.5]
+    maximum_flight_time_s: 4.0
+    # Deploy-sim stress test: each serve is chosen independently, 50% are failure trajectories.
+    # Of the failure trajectories, 50% hit the net and 50% clear it but stay more than 3 m from the G1 in XY after the bounce.
+    failure_trajectory_probability: 0.50
+    failure_trajectory_no_net_fraction: 0.50
+    failure_trajectory_xy_distance_threshold_m: 3.0
+    failure_trajectory_sampling_attempts: 24
+    failure_net_crossing_height_range_m: [1.5, 3.5]
+    failure_maximum_initial_speed_m_s: 7.0
+    position_min_w: [5.5, -1.5, 0.6]
+    position_max_w: [6.5, 1.5, 1.2]
+    linear_velocity_min_w: [-4.2, -1.25, 3.0]
+    linear_velocity_max_w: [-2.8, 1.25, 5.5]
+    angular_velocity_min_w: [0.0, 0.0, 0.0]
+    angular_velocity_max_w: [0.0, 0.0, 0.0]
+  # Only for --interactive-perturbation: held still until released by a mouse drag.
+  interactive_ball:
+    position_w: [0.31931576, 0.93759470, 1.08916278]
+
+
+tennis_ball_physics:
+  mass_kg: 0.0577
+  radius_m: 0.0335
+  air_density_kg_m3: 1.225
+  dynamic_viscosity_pa_s: 0.0000181
+  wind_w: [0.0, 0.0, 0.0]
+  drag_coefficient: 0.55
+  magnus_coefficient: 0.0
+  angular_drag_coefficient: 0.01
