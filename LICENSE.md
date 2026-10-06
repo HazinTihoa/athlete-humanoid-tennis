@@ -39,6 +39,12 @@ respective files:
   (https://github.com/project-instinct/instinct_rl), licensed under
   CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/). These files
   may not be used for commercial purposes.
+- `motion_matching/tennis_official_mm_mj.py` and `motion_matching/build_official_mm_db.py`
+  port the motion-matching core (feature layout, normalization, brute-force
+  search, inertialization) of https://github.com/orangeduck/Motion-Matching,
+  distributed under the MIT License:
+  "Copyright (c) 2021 Daniel Holden". The permission notice above applies to
+  those portions as well.
 - Unitree G1 robot model and meshes (`robots/`, `deploy/policies/*/robot/`):
   BSD 3-Clause, Unitree Robotics (see `deploy/policies/m14_11/robot/LICENSE.Unitree`).
 - The deployment stack in `deploy/` is based on

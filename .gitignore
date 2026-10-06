@@ -18,3 +18,9 @@ athlete/**/.mp4
 exec-*.png
 *.orig
 
+# Generated motion-matching databases and collected references; only the
+# 34-body augmentation mapping is tracked.
+motion_db/*
+!motion_db/g1_racket_34body_augment.npz
+data/lafan_npz_data/
+neck_height_cache.npy

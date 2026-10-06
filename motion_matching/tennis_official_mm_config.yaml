@@ -1,0 +1,165 @@
+# Tennis Motion Matching (official move-MM core, tennis_official_mm_mj.py) hyperparameters
+#
+# Database = official binary resource directory (features.bin/g1_state.npz/metadata.json/strike_metadata.npz),
+# built by build_official_mm_db.py:
+#   python motion_matching/build_official_mm_db.py \
+#     --input-dir data/lafan_npz_data/runandwalk \
+#     --strike-dir data/djvkovic_npz_data_v5 \
+#     --output-dir motion_db/official_tennis_runwalk_hand33
+# The feature layout and build-time weights are baked into features.bin; the weights below are
+# runtime weights, effective = (requested / built)^2, so changing them needs no rebuild.
+
+# ---- Matching control (official semantics) ----
+rematch_interval: 10         # search every N frames (5 frames = 0.1 s @ 50 fps = official search_time)
+transition_cost: 0.0        # additive switching cost (added to candidates; the current frame competes without it). Official default 0
+ignore_range_end: 20        # the last N frames of each clip cannot be matched (official)
+ignore_surrounding: 20      # frames within ±N of the current frame cannot be matched (official)
+min_neck_height: 1.0       # move-search filter: frames whose shoulder midpoint is below this height (m) are skipped (crouch/dive/get-up); 0 = off
+                            # the first launch computes and caches neck heights for the whole database (neck_height_cache.npy)
+blend_frames: 10            # inertialization blending duration in frames
+move_xy_tolerance: 0.20     # fallback stop threshold when no strike entry is available
+
+# ---- Runtime feature weights (5 official groups + 2 racket-hand groups; applied as squared ratio to build weights) ----
+# Build weights are stored in the resource metadata.json (defaults foot_position 0.75 / foot_velocity 1.0 /
+# hip_velocity 1.0 / trajectory_position 1.0 / trajectory_direction 1.5 /
+# hand_position 0.5 / hand_velocity 0.25).
+weights:
+  foot_position: 1.0
+  foot_velocity: 1.0
+  hip_velocity: 1.0
+  trajectory_position: 3.0   # official mm_config recommends 3.0: trajectory following dominates
+  trajectory_direction: 3.0
+  hand_position: 2        # right wrist XYZ relative to root in the facing frame; keeps the racket-hand pose continuous
+  hand_velocity: 2        # right-wrist velocity minus root translation velocity; low weight so it does not override the target trajectory
+
+# ---- Two-hand ready-pose constraint during locomotion ----
+# Only affects locomotion candidate search. A quadratic cost applies beyond tolerance_radius; unused during strikes.
+move_hand_hold:
+  enabled: true
+  reference_motion: data/djvkovic_npz_data_v5/bh_01_g1.npz
+  tolerance_radius: 0.1  # penalty-free radius (m) of each wrist in the root-facing frame
+  weight: 40.0             # weight of the total normalized two-hand quadratic cost beyond the radius
+
+# ---- Episode collection (enabled with --collect N) ----
+# Automatic: sample a ball -> approach with move -> enter the strike -> finish the swing = save one episode,
+# then serve the next ball until N episodes are saved.
+# npz fields match data/djvkovic_npz_data_v5 (fps/joint_pos/joint_vel/body_*_w + .json strike_frame;
+# bodies are saved in the 34-body training layout). Add --playback_fps 1000 to speed up collection.
+collect:
+  out_dir: data/generated/collected_episodes   # relative to the repository root
+  prefix: ep                           # file name prefix: ep_0000.npz / ep_0000.json
+  episode_timeout: 12.0                # discard and resample if the strike is not finished within this many seconds after the serve
+  min_frames: 60                       # discard episodes shorter than this many frames
+  # Auto-numbering: on start-up, scan out_dir for the largest index and continue from it without overwriting (re-running resumes collection).
+  visualize: false                     # draw markers (ball/trajectory/court) during collection; false = faster
+  sync_interval: 10                    # with visualize=false, refresh the viewer every N frames
+
+# ---- Logging ----
+logging:
+  match_log: false         # print a "Match ..." line for every MM search (off by default)
+  height_log: true         # periodically print the shoulder-midpoint (neck, highest rigid point unaffected by arm motion) position + horizontal speed
+  height_log_interval: 25  # print period (frames; 25 = 0.5 s @ 50 fps)
+  height_viz: false        # hide the magenta shoulder-midpoint sphere, its ground projection and the vertical line
+  mode_switch_radius_viz: true  # yellow circle showing the near/far switching threshold (reads ct_oc.mode_switch_distance)
+  strike_path_viz: true    # red line showing the aligned root XY path of the selected strike clip (entry -> clip end; red dot = root at strike frame)
+  root_heading_viz: false  # hide the cyan root heading arrow at the robot's feet
+  motion_matching_viz: false  # hide MM velocity arrows, the purple matched trajectory and the white query trajectory
+  root_lag_viz: false      # hide the blue query-root sphere, the green robot-root sphere and the line between them
+  ghost_snapshot_interval: 20         # --ghost: keep a static G1 ghost every N frames during locomotion
+  ghost_strike_snapshot_interval: 40  # --ghost: strike ghost interval anchored at the pre-contact key frame
+  ghost_strike_precontact_frames: 2   # --ghost: always keep the pose 2 frames before the strike frame
+  ghost_loco_min_distance: 0.3        # --ghost: minimum horizontal spacing (m) between locomotion ghost roots
+  racket_center_path_viz: true        # draw the racket-face center path during strikes only; light-green dashes, dark-green direction arrows
+
+# ---- Control mode ----
+# ball    = strike pipeline (default): sample ball -> strike entry -> CasADi trajectory -> enter strike
+# gamepad = pure locomotion teleoperation (official demo semantics): no ball and no strike; follows W/A/S/D (terminal or viewer window)
+#           or a GLFW joystick (left stick move / right stick turn / A = walk / LT = strafe). CLI --control overrides this.
+control:
+  mode: ball
+
+# Gamepad-mode simulation springs and speeds (official mm_config semantics; speed limits match the LAFAN data)
+gamepad:
+  velocity_halflife: 0.27
+  rotation_halflife: 0.27
+  yaw_speed: 2.0                 # right-stick turning speed in rad/s (the right stick is the only turning source; the left stick only translates)
+  force_search_vel_change: 3.0   # trigger a forced search when the desired velocity changes faster than this (m/s^2)
+  stick_frame: body              # left-stick translation frame: body = along the current heading (official direct-yaw) | camera = along the camera
+  # Limits follow the data maxima (LAFAN locomotion: forward max 4.42 / side max 3.08 / back max 2.69); higher is out of distribution
+  run:  {forward_speed: 4.0, side_speed: 2.2, back_speed: 2.2}
+  walk: {forward_speed: 1.75, side_speed: 1.2, back_speed: 1.2}
+
+# ---- Target trajectory module ----
+target_trajectory:
+  config: motion_matching/target_trajectory_config.yaml
+  planner: ct_oc_casadi      # ct_oc_casadi | optimized_omni
+  default_yaw: 0.0
+  closed_loop: false         # false = open loop (phase advances in real time; move duration = planned duration); true = closed loop (wait when lagging)
+  lag_tolerance: 0.5         # only with closed_loop=true: the trajectory waits when the root is farther than this from the trajectory point
+  mouse_select_yaw: false    # false = the mouse only selects a point (XY), heading stays default_yaw and no heading arrow is drawn; true = drag to set heading
+
+# ---- Locomotion -> strike stitching ----
+strike_entry:
+  enabled: true
+  min_lead_frames: 10
+  max_search_frames: 45
+  predict_move_frames: 20
+  w_contact_z: 8.0
+  w_contact_xy: 0.1
+  w_key_pose: 2.0
+  w_joint_pose: 0.25
+  w_yaw: 0.75
+  w_clip_start: 0.03
+  switch_xy_threshold: 0.20
+  switch_yaw_threshold_deg: 20.0   # tightened (was 35): a smaller heading error at entry leaves less turning for the blend to absorb
+  switch_timeout_s: 1.0            # extra time to converge after the trajectory ends; force the entry on timeout to avoid getting stuck
+  # Blend length used only for strike entry (move switches still use the top-level blend_frames).
+  # The running pose differs strongly from the strike ready pose, so 0.2 s is too short; 25 frames = 0.5 s.
+  # At entry the entry frame is also re-selected within the chosen clip's entry window
+  # using the pose actually reached (built into the code, no configuration needed).
+  entry_blend_frames: 25
+  postcontact_frames: 0     # the strike motion stops and holds the pose at the strike frame
+
+# ---- Visualization-only incoming ball trajectory ----
+# The incoming ball is not part of the MuJoCo physics and has no collisions; it launches when the strike clip starts
+# and arrives at the racket contact point of the selected reference motion together with the G1.
+incoming_ball_visualization:
+  enabled: true
+  start_distance: 4.0       # launch distance (m) back from the contact point toward the opponent's court, along the robot heading
+  start_height_offset: 0.6  # launch height relative to the contact point (m)
+  arc_height: 0.8           # parabolic height (m) added on top of linear interpolation
+  samples: 49
+
+# ---- Ball sampling range ----
+# Same MuJoCo court as training and deployment. The court XML origin is at the net and is shifted
+# to world x = 5.6 m on load, so the robot's half court is x in [-6.285, 5.6] and the robot starts at the world origin.
+court:
+  scene_xml: deploy/simulation/assets/tennis_court.xml
+  net_x: 5.6
+  # The MM viewer runs no ball physics; anti-aliasing and shadow-map resolution are reduced to keep interaction smooth.
+  render:
+    shadowsize: 4096
+    offsamples: 4
+
+# When radius is set, "disk mode" samples XY uniformly in a disk of that radius centered at the G1's current position,
+# with the absolute height range z_abs (from the p5-p95 strike heights of the tennis dataset, [0.55, 1.59], so a clip is always available).
+# Remove radius to fall back to the legacy heading-frame rectangle mode (x/y/z).
+ball_sample:
+  radius: 3.0              # sampling radius (m) around the robot's current position; the center follows the robot across consecutive strikes
+  court_x: [-6.285, 5.6]   # G1 half court: x from baseline (-6.285) to net (5.6)
+  court_y: [-4.115, 4.115] # singles width (ball inside the court)
+  z_abs: [0.5, 1.30]      # absolute strike height (m; from the dataset strike heights p5-p95)
+
+# Default ball position (non-random mode)
+ball_default:
+  x: 0.5
+  y: -0.3
+  z: 0.9
+  time_remaining: 1.0
+
+# Fixed pose the robot is reset to after each strike (training court: net at x = 5.6 m, long side along +X)
+reset_pose:
+  x: 0.0       # G1 initial world position, consistent with training and deployment
+  y: 0.0
+  yaw: 0       # heading +x = facing the opponent's half court
+  frame: 0

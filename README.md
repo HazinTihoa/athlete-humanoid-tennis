@@ -31,14 +31,15 @@ The code is released in stages. This repository currently contains:
 - [x] G1 + racket robot models and meshes (`robots/`)
 - [x] 164 video-derived strike clips with strike-frame annotations
   (`data/djvkovic_npz_data_v5/`)
+- [x] Trajectory-Guided Motion Matching (TGMM): motion-database construction,
+  target-trajectory optimization and kinematic reference generation
+  (`motion_matching/`)
 - [x] Unit tests for training and deployment
 
 **Coming soon**
 
 - [ ] Reference-motion datasets used for training (`rollout_1000epis`,
   `rollout_1000epis_relabelled`, ~430 MB each)
-- [ ] Trajectory-Guided Motion Matching (TGMM): motion-database construction,
-  target-trajectory optimization and reference generation
 - [ ] LAFAN1 locomotion download and conversion scripts
 - [ ] Full-flight fine-tuned policy checkpoint
 
@@ -49,6 +50,8 @@ The code is released in stages. This repository currently contains:
 | `athlete/` | Python package: tasks, MDP terms, TPPO distillation, training / play scripts, tests |
 | `athlete/src/athlete/goal_cond_tracking/` | Environment configs (`config/g1/`), MDP terms (`mdp/`), RL runner and TPPO (`rl/`) |
 | `athlete/src/athlete/motion_sets/` | Motion library and motion-set TOMLs passed with `--motion-config` |
+| `motion_matching/` | Trajectory-Guided Motion Matching: database builder, CT-OC target-trajectory optimizer, reference generator |
+| `motion_db/` | Motion-matching resources (34-body augmentation mapping; generated databases are written here) |
 | `deploy/` | ROS 2 Jazzy deployment stack (MuJoCo sim and real G1), see [Deployment](#deployment) |
 | `deploy/policies/m14_11/` | Released student policy (`.pt` + `.onnx`) and its robot assets |
 | `checkpoints/` | Frozen teacher checkpoint used for distillation and fine-tuning |
@@ -82,6 +85,57 @@ The deployment stack uses a separate ROS 2 environment (see [Deployment](#deploy
   teacher uses `rollout_1000epis`; the student uses the relabelled
   `rollout_1000epis_relabelled`. Both are distributed separately because of
   their size; place them under `artifacts/` (download link to be added).
+
+## Reference generation (TGMM)
+
+Trajectory-Guided Motion Matching composes reusable locomotion with
+video-derived strikes into approach-and-strike references. The pipeline has
+three stages; stages 1 and 2 are released in `motion_matching/`.
+
+Install the optional dependency first:
+
+```bash
+uv sync --extra motion-matching
+```
+
+**1. Build the motion-matching database** from LAFAN1 locomotion
+(`data/lafan_npz_data/runandwalk/`, 16 run/walk sequences retargeted to the G1)
+and the strike clips:
+
+```bash
+uv run python motion_matching/build_official_mm_db.py \
+  --input-dir data/lafan_npz_data/runandwalk \
+  --strike-dir data/djvkovic_npz_data_v5 \
+  --output-dir motion_db/official_tennis_runwalk_hand33
+```
+
+**2. Generate kinematic references.** For each randomly sampled ball, a CasADi
+continuous-time optimal-control problem plans the root trajectory toward a
+strike entry, motion matching follows it with locomotion clips, and the
+selected strike clip is stitched in with inertialization:
+
+```bash
+uv run python motion_matching/tennis_official_mm_mj.py \
+  --db_file motion_db/official_tennis_runwalk_hand33 \
+  --config motion_matching/tennis_official_mm_config.yaml \
+  --collect 1000 --headless
+```
+
+Episodes are written to `data/generated/collected_episodes/` as `ep_XXXX.npz`
+(the 34-body layout of the strike clips) with a JSON sidecar holding the strike
+frame and ball target. Run without `--collect --headless` (optionally with
+`--interactive --ghost`) to explore the generator in the MuJoCo viewer.
+
+**3. Dynamic correction by simulated imitation (not included).** A
+motion-tracking policy trained in Isaac Lab tracks every kinematic reference in
+physics simulation, and the executed motions are recorded at 50 Hz in the same
+format, yielding physically consistent references. Collecting once keeps the
+planned ball targets (`rollout_1000epis`, used by the teacher); collecting with
+ball relabelling rewrites each target to the racket position actually reached
+at the strike frame and recomputes it in the frame-0 pelvis frame
+(`rollout_1000epis_relabelled`, used by the student), so that target labels
+match the executed motion. The resulting datasets will be released (see
+[Release status](#release-status)).
 
 ## Quick start: run the released policy
 
@@ -298,7 +352,8 @@ This code base builds on [TaskNPoint](https://github.com/wernerb43/tasknpoint)
 for its goal-conditioned motion-tracking foundation and on
 [mjlab](https://github.com/mujocolab/mjlab) for GPU-accelerated MuJoCo
 simulation and the RL environment framework. The TPPO algorithm is adapted
-from [Instinct-RL](https://github.com/project-instinct/instinct_rl). Training
+from [Instinct-RL](https://github.com/project-instinct/instinct_rl), and the motion-matching
+core is ported from Daniel Holden's [Motion-Matching](https://github.com/orangeduck/Motion-Matching). Training
 uses [RSL-RL](https://github.com/leggedrobotics/rsl_rl); the robot model and
 meshes are from [Unitree](https://github.com/unitreerobotics/unitree_ros);
 locomotion references derive from the

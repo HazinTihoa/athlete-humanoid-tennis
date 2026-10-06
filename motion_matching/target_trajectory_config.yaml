@@ -1,0 +1,138 @@
+# Standalone target trajectory generator config.
+#
+# Run:
+#   python motion_matching/target_trajectory_optimizer.py --config motion_matching/target_trajectory_config.yaml
+#   python motion_matching/target_trajectory_optimizer.py --config motion_matching/target_trajectory_config.yaml --validate-mujoco
+#   python motion_matching/target_trajectory_optimizer.py --config motion_matching/target_trajectory_config.yaml --viewer
+
+sampling:
+  num: 8
+  seed: 0
+  fps: 50.0
+  # optimized_omni: SLSQP body-frame control optimization. High yaw penalties
+  # encourage sideways/backward translation instead of turning into forward run.
+  # straight_omni_min_time: faster straight XY fallback model.
+  # omni_progress: reference straight-line omnidirectional progress.
+  # free_quintic: old direct quintic in x/y/yaw, useful only as a reference.
+  trajectory_model: optimized_omni
+
+  # Start pose is fixed: position=(0, 0), yaw=0, i.e. facing world +X.
+  # Start from rest; nonzero initial velocity tends to create unnecessary entry arcs.
+  start_speed_range: [0.0, 0.0]
+  start_vel_yaw_deg: [-60.0, 60.0]
+
+  # Target position is sampled from polar coordinates around the origin.
+  distance_range: [0.5, 10.0]
+  target_bearing_deg: [-180.0, 180.0]
+
+  # Target yaw and target speed. target_zero_speed_prob explicitly samples exact stop targets.
+  # 0-1.5m/s matches the "set-up / hitting moment" range better than full running speed.
+  target_yaw_deg: [0.0, 0.0]
+  target_speed_range: [0.0, 1.5]
+  target_zero_speed_prob: 0.35
+
+  # Time window for arrival. optimized_omni searches this range and picks the
+  # shortest feasible duration. (Upper bound raised to fit the data-matched speed caps.)
+  duration_range: [0.8, 6.0]
+  lateral_offset_range: [0.0, 0.0]
+  max_lateral_ratio: 0.10
+  # ⚠️ Caps matched to LAFAN loco DB coverage (forward p90=2.49 max=4.42, lateral p99=1.89,
+  # backward p99=2.45 m/s). minimize_duration rides these caps, so caps above the data make
+  # every plan demand OOD speeds -> the MM query's traj block matches nothing -> can't follow.
+  max_speed: 3.2
+  max_accel: 6.0
+  max_yaw_rate: 5.0
+  max_tries: 32
+
+  optimization:
+    # Body-frame SLSQP control limits.
+    knots: 12
+    max_iter: 80
+    ftol: 0.00001
+    terminal_tol: 0.10
+    minimize_duration: true
+    duration_search_steps: 3
+
+    # Speed limits, m/s — matched to what the LAFAN loco DB actually contains
+    # (forward p90=2.49, lateral p99=1.89, backward p99=2.45). Demanding faster than the
+    # data means motion matching cannot realize the trajectory.
+    forward_speed: 4.0      # DB forward p90=2.49 max=4.42
+    lateral_speed: 3.0      # raised from 1.5 to prefer sidestep over turn-run (DB lateral max=3.08)
+    backward_speed: 2.0     # DB backward p90=1.73
+
+    # Body-frame acceleration limits, m/s^2 (rad/s^2 for yaw). One limit per axis governs
+    # BOTH speeding up and braking (accel/brake merged; omit *_brake -> defaults to *_accel).
+    forward_accel: 8.5
+    lateral_accel: 8.5      # raised from 3.0 so the sidestep can ramp up quickly
+    backward_accel: 8.5
+    yaw_accel: 8.0
+
+    # Cost weights. Lateral/backward are deliberately zero: they are constrained
+    # by speed/acceleration limits, but not punished as movement choices.
+    w_speed: 0.02
+    w_accel: 0.1
+    w_jerk: 0.3
+    w_lateral: 0.0
+    w_backward: 0.0
+    w_yaw_rate: 0.1
+    w_yaw_deviation: 0.0
+    w_path: 5.0
+    w_reverse_progress: 2.0
+
+# ---- Dual-mode CT-OC ----
+# Shared by the CasADi + IPOPT version (default, planner: ct_oc_casadi) and the legacy SLSQP version
+# (mode_aware_ct_oc_optimizer.py).
+ct_oc:
+  # Mode selection: within this radius from the current root, force translation mode;
+  # outside it, force turn-run mode.
+  mode_switch_distance: 1.5
+
+  # Phase durations are optimization variables of the CasADi version: the three *_phase values below are only initial-guess ratios;
+  # the optimizer allocates them itself (each phase >= phase_min_time, total duration within duration_range).
+  turn_phase: 0.25               # turn_run: initial ratio of the turning phase
+  recover_phase: 0.25            # turn_run: initial ratio of the recovery phase
+  translation_align_phase: 0.35  # translation: initial ratio of the alignment phase
+  phase_min_time: 0.10           # minimum duration of each phase (s)
+  distance_weight: 0.5          # explicit shortest-path term: w * path length / max(straight-line distance, 1 m)
+
+  # Terminal success thresholds + turn-run hard constraints (both planner versions read these).
+  # terminal_pos_tolerance: 0.10       # success threshold, meters
+  # terminal_yaw_tolerance: 0.10       # success threshold, radians
+  # terminal_vel_tolerance: 0.25       # success threshold, m/s
+  # terminal_yaw_rate_tolerance: 0.25  # success threshold, rad/s
+
+  terminal_pos_tolerance: 0.05
+  terminal_yaw_tolerance: 0.08
+  terminal_vel_tolerance: 0.25
+  terminal_yaw_rate_tolerance: 0.25
+
+  dynamics_tolerance: 0.01           # collocation residual success threshold
+  turn_run_turn_speed: 0.8          # m/s cap during turn phase
+  turn_run_turn_progress: 0.35      # max forward progress during turn phase
+  turn_run_corridor_width: 0.55     # max path corridor half-width, meters
+  turn_run_corridor_ratio: 0.12     # corridor also capped by ratio * target distance
+  turn_run_recover_distance: 0.75   # recover phase can start only near target progress
+  turn_run_yaw_tolerance_deg: 35.0  # hard yaw tolerance around run_direction in run phase
+
+query:
+  # Future trajectory sample offsets in frames, same convention as the MM database.
+  offsets: [20, 40, 60]
+
+viewer:
+  # Viewer keys: M = mouse target edit, R = random target, Space = pause.
+  # In mouse edit mode: left-click target point, drag direction, release to optimize.
+  enabled: false
+  trajectory_index: 0
+  playback_fps: 50.0
+  root_height: 0.78
+  loop: false
+  # null = keep viewer open; set an integer for automated smoke tests.
+  max_frames:
+
+validation:
+  enabled: false
+  samples: 16
+
+output:
+  # Set to a path to save sampled trajectories/query features as npz.
+  save:
