@@ -1,5 +1,7 @@
 # ATHLETE: Learning Reactive Humanoid Tennis via Trajectory-Guided Motion Matching
 
+**English** | [简体中文](README.zh-CN.md)
+
 Code for training, simulating and deploying the ATHLETE reactive whole-body
 tennis policy on a Unitree G1 humanoid.
 
