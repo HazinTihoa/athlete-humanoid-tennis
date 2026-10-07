@@ -350,17 +350,15 @@ Deployment tests run in the deploy environment:
 
 ## Acknowledgements
 
-This code base builds on [TaskNPoint](https://github.com/wernerb43/tasknpoint)
-for its goal-conditioned motion-tracking foundation and on
-[mjlab](https://github.com/mujocolab/mjlab) for GPU-accelerated MuJoCo
-simulation and the RL environment framework. The TPPO algorithm is adapted
-from [Instinct-RL](https://github.com/project-instinct/instinct_rl), and the motion-matching
-core is ported from Daniel Holden's [Motion-Matching](https://github.com/orangeduck/Motion-Matching). Training
-uses [RSL-RL](https://github.com/leggedrobotics/rsl_rl); the robot model and
-meshes are from [Unitree](https://github.com/unitreerobotics/unitree_ros);
-locomotion references derive from the
-[LAFAN1](https://github.com/ubisoft/ubisoft-laforge-animation-dataset) dataset.
-We thank the authors of these projects.
+We thank the authors of the following projects:
+
+- [TaskNPoint](https://github.com/wernerb43/tasknpoint): goal-conditioned motion-tracking foundation of this code base
+- [mjlab](https://github.com/mujocolab/mjlab): GPU-accelerated MuJoCo simulation and RL environment framework
+- [Instinct-RL](https://github.com/project-instinct/instinct_rl): the TPPO algorithm adapted for teacher-student distillation
+- [Motion-Matching](https://github.com/orangeduck/Motion-Matching) by Daniel Holden: the motion-matching core ported in `motion_matching/`
+- [RSL-RL](https://github.com/leggedrobotics/rsl_rl): reinforcement-learning runner
+- [Unitree](https://github.com/unitreerobotics/unitree_ros): G1 robot model and meshes
+- [LAFAN1](https://github.com/ubisoft/ubisoft-laforge-animation-dataset): source of the locomotion references
 
 ## License
 

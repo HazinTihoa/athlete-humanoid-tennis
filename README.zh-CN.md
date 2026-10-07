@@ -290,13 +290,15 @@ uv run pytest athlete/tests
 
 ## 致谢
 
-本项目的目标条件动作跟踪基础建立在 [TaskNPoint](https://github.com/wernerb43/tasknpoint) 之上，
-GPU 加速的 MuJoCo 仿真和强化学习环境框架来自 [mjlab](https://github.com/mujocolab/mjlab)。
-TPPO 算法改编自 [Instinct-RL](https://github.com/project-instinct/instinct_rl)，运动匹配核心移植自
-Daniel Holden 的 [Motion-Matching](https://github.com/orangeduck/Motion-Matching)。训练使用
-[RSL-RL](https://github.com/leggedrobotics/rsl_rl)；机器人模型和网格来自
-[Unitree](https://github.com/unitreerobotics/unitree_ros)；走跑参考动作来源于
-[LAFAN1](https://github.com/ubisoft/ubisoft-laforge-animation-dataset) 数据集。感谢这些项目的作者。
+感谢以下项目的作者：
+
+- [TaskNPoint](https://github.com/wernerb43/tasknpoint)：本项目目标条件动作跟踪部分的基础
+- [mjlab](https://github.com/mujocolab/mjlab)：GPU 加速的 MuJoCo 仿真与强化学习环境框架
+- [Instinct-RL](https://github.com/project-instinct/instinct_rl)：Teacher–Student 蒸馏所改编的 TPPO 算法
+- [Motion-Matching](https://github.com/orangeduck/Motion-Matching)（Daniel Holden）：`motion_matching/` 中移植的运动匹配核心
+- [RSL-RL](https://github.com/leggedrobotics/rsl_rl)：强化学习训练框架
+- [Unitree](https://github.com/unitreerobotics/unitree_ros)：G1 机器人模型与网格
+- [LAFAN1](https://github.com/ubisoft/ubisoft-laforge-animation-dataset)：走跑参考动作的数据来源
 
 ## 许可证
 
