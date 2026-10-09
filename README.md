@@ -36,13 +36,14 @@ The code is released in stages. This repository currently contains:
 - [x] Trajectory-Guided Motion Matching (TGMM): motion-database construction,
   target-trajectory optimization and kinematic reference generation
   (`motion_matching/`)
+- [x] Local G1 LAFAN1 CSV-to-NPZ converter (`scripts/prepare_lafan_locomotion.py`);
+  third-party motion files are not redistributed
 - [x] Unit tests for training and deployment
 
 **Coming soon**
 
 - [ ] Reference-motion datasets used for training (`rollout_1000epis`,
   `rollout_1000epis_relabelled`, ~430 MB each)
-- [ ] LAFAN1 locomotion download and conversion scripts
 - [ ] Full-flight fine-tuned policy checkpoint
 
 ## Repository layout
@@ -93,6 +94,33 @@ The deployment stack uses a separate ROS 2 environment (see [Deployment](#deploy
 Trajectory-Guided Motion Matching composes reusable locomotion with
 video-derived strikes into approach-and-strike references. The pipeline has
 three stages; stages 1 and 2 are released in `motion_matching/`.
+
+The 16 G1 locomotion motions required by stage 1 are **not included in this
+repository**. They originate from [Ubisoft LAFAN1](https://github.com/ubisoft/ubisoft-laforge-animation-dataset)
+and were retargeted to G1 by the maintainers of the
+[LAFAN1 Retargeting Dataset](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset),
+then converted from their 30 fps CSV files to 50 fps NPZ with Isaac Lab forward
+kinematics for the original experiments. Ubisoft's [CC BY-NC-ND 4.0 license](https://github.com/ubisoft/ubisoft-laforge-animation-dataset/blob/master/license.txt)
+does not grant permission to redistribute adapted motion data, so the converted
+NPZ files remain local and are ignored by Git. Obtain the upstream data directly
+and follow the applicable licenses. To make compatible local NPZ files with
+the included MuJoCo converter (body velocities can differ from the original
+Isaac Lab logs, so this is not a bitwise reproduction of the training input):
+
+```bash
+# In the ATHLETE repository root; install the Hugging Face CLI separately.
+hf download lvhaidong/LAFAN1_Retargeting_Dataset --repo-type dataset \
+  --include 'g1/run*.csv' --include 'g1/walk*.csv' \
+  --local-dir /path/to/lafan1-retargeted
+
+uv run python scripts/prepare_lafan_locomotion.py \
+  --input-dir /path/to/lafan1-retargeted/g1 \
+  --output-dir data/lafan_npz_data/runandwalk
+```
+
+The resulting directory should contain four `run*.npz` and twelve `walk*.npz`
+files. Alternatively, copy previously converted NPZ files there. The database
+builder below consumes this directory directly.
 
 Install the optional dependency first:
 

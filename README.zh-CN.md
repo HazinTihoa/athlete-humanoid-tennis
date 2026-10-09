@@ -26,12 +26,12 @@
 - [x] G1 + 球拍的机器人模型与网格（`robots/`）
 - [x] 164 个从视频重建的击球片段及击球帧标注（`data/djvkovic_npz_data_v5/`）
 - [x] 轨迹引导运动匹配（TGMM）：动作数据库构建、目标轨迹优化和运动学参考动作生成（`motion_matching/`）
+- [x] 本地 G1 LAFAN1 CSV 转 NPZ 脚本（`scripts/prepare_lafan_locomotion.py`）；不重新分发第三方动作文件
 - [x] 训练端和部署端的单元测试
 
 **即将发布**
 
 - [ ] 训练用的参考动作数据集（`rollout_1000epis`、`rollout_1000epis_relabelled`，各约 430 MB）
-- [ ] LAFAN1 走跑数据的下载与转换脚本
 - [ ] Full-flight 微调后的策略 checkpoint
 
 ## 目录结构
@@ -74,6 +74,29 @@ uv sync
 
 轨迹引导运动匹配（TGMM）把可复用的走跑动作和从视频重建的击球动作拼接成“移动 + 击球”参考动作。
 整个流程分三步，第 1、2 步的代码在 `motion_matching/` 中。
+
+第 1 步所需的 16 条 G1 走跑动作**未包含在本仓库中**。它们源自
+[Ubisoft LAFAN1](https://github.com/ubisoft/ubisoft-laforge-animation-dataset)，由
+[LAFAN1 Retargeting Dataset](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset)
+的维护者重定向到 G1；原始实验再通过 Isaac Lab 正向运动学将 30 fps CSV 转换为 50 fps NPZ。Ubisoft 的
+[CC BY-NC-ND 4.0 许可](https://github.com/ubisoft/ubisoft-laforge-animation-dataset/blob/master/license.txt)
+未授权公开分发改编后的动作数据，因此转换后的 NPZ 仅保留在本地，并被 Git 忽略。请从上游获取数据并遵守适用许可。
+本仓库提供 MuJoCo 转换脚本，可在本地生成兼容的 NPZ；其中的刚体速度可能与原始 Isaac Lab 记录不同，
+因此不能逐字节复现原始训练输入：
+
+```bash
+# 在 ATHLETE 仓库根目录运行；需另外安装 Hugging Face CLI。
+hf download lvhaidong/LAFAN1_Retargeting_Dataset --repo-type dataset \
+  --include 'g1/run*.csv' --include 'g1/walk*.csv' \
+  --local-dir /path/to/lafan1-retargeted
+
+uv run python scripts/prepare_lafan_locomotion.py \
+  --input-dir /path/to/lafan1-retargeted/g1 \
+  --output-dir data/lafan_npz_data/runandwalk
+```
+
+输出目录应包含 4 条 `run*.npz` 和 12 条 `walk*.npz`。如已有转换后的 NPZ，也可以直接复制到该目录。
+下方的数据库构建脚本会直接读取这些文件。
 
 先安装可选依赖：
 
