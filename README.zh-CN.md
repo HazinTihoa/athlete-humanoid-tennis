@@ -2,6 +2,11 @@
 
 [English](README.md) | **简体中文**
 
+[项目网站与交互演示](https://hazintihoa.github.io/athlete.github.io/)
+
+**快速导航：**[运行已发布策略](#快速开始运行发布的策略) ·
+[生成参考动作](#参考动作生成tgmm) · [安装](#安装) · [部署](#部署)
+
 本仓库包含在 Unitree G1 人形机器人上训练、仿真和部署 ATHLETE 反应式全身网球策略的代码。
 
 一个**时间自适应的 Teacher** 跟踪经过动力学修正的全身参考动作，同时根据击球截止时间调整动作相位。
@@ -55,7 +60,7 @@
 训练使用 Python 3.13 和 [uv](https://docs.astral.sh/uv/)，需要支持 CUDA 12.8 的 GPU。
 
 ```bash
-git clone <this repository> athlete-humanoid-tennis
+git clone https://github.com/HazinTihoa/athlete-humanoid-tennis.git
 cd athlete-humanoid-tennis
 uv sync
 ```

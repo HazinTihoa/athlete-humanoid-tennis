@@ -2,6 +2,12 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
+[Project website & interactive demo](https://hazintihoa.github.io/athlete.github.io/)
+
+**Start here:** [Run the released policy](#quick-start-run-the-released-policy) ·
+[Generate motion references](#reference-generation-tgmm) ·
+[Installation](#installation) · [Deployment](#deployment)
+
 Code for training, simulating and deploying the ATHLETE reactive whole-body
 tennis policy on a Unitree G1 humanoid.
 
@@ -68,7 +74,7 @@ Training uses Python 3.13 and [uv](https://docs.astral.sh/uv/); a CUDA 12.8
 capable GPU is required.
 
 ```bash
-git clone <this repository> athlete-humanoid-tennis
+git clone https://github.com/HazinTihoa/athlete-humanoid-tennis.git
 cd athlete-humanoid-tennis
 uv sync
 ```
