@@ -24,33 +24,60 @@ reference motions ──▶ teacher (phase + deadline) ──▶ student (DAgger
 
 ## Release status
 
-The code is released in stages. This repository currently contains:
+This checklist describes files published in this repository. TODO items are
+not available from a fresh clone; no release date or download link is provided.
 
-**Released**
+### Published
 
-- [x] Training code: time-adaptive teacher, TPPO student distillation with PPO
-  fine-tuning, and full-flight fine-tuning tasks (`athlete/`)
-- [x] Simulation and evaluation: play with native / browser (viser) viewers,
-  ONNX student playback, evaluation scripts
-- [x] Deployment stack for MuJoCo simulation and the real Unitree G1 (`deploy/`)
-- [x] Released student policy, PyTorch checkpoint and exported ONNX
-  (`deploy/policies/m14_11/`)
-- [x] Frozen teacher checkpoint (`checkpoints/teacher_model_29999.pt`)
-- [x] G1 + racket robot models and meshes (`robots/`)
-- [x] 164 video-derived strike clips with strike-frame annotations
-  (`data/djvkovic_npz_data_v5/`)
-- [x] Trajectory-Guided Motion Matching (TGMM): motion-database construction,
-  target-trajectory optimization and kinematic reference generation
-  (`motion_matching/`)
-- [x] Local G1 LAFAN1 CSV-to-NPZ converter (`scripts/prepare_lafan_locomotion.py`);
-  third-party motion files are not redistributed
-- [x] Unit tests for training and deployment
+- [x] **Teacher training code:** phase-adaptive reference tracking in
+  `athlete/src/athlete/goal_cond_tracking/`.
+- [x] **Student training code:** TPPO distillation, PPO fine-tuning and
+  full-flight task configurations in `athlete/`.
+- [x] **Simulation and evaluation code:** native/viser playback, ONNX playback,
+  and checkpoint evaluation scripts in `athlete/` and `scripts/`.
+- [x] **TGMM code:** database construction, target-trajectory optimization,
+  motion matching and kinematic reference collection in `motion_matching/`.
+- [x] **Locomotion conversion script:** `scripts/prepare_lafan_locomotion.py`
+  converts separately obtained G1 LAFAN1 CSV files into local NPZ files.
+- [x] **Strike data:** 164 NPZ clips and 164 JSON annotations in
+  `data/djvkovic_npz_data_v5/` (97 forehand, 67 backhand).
+- [x] **Teacher checkpoint:** `checkpoints/teacher_model_29999.pt`.
+- [x] **Student checkpoint and ONNX model:**
+  `deploy/policies/m14_11/model_36499.pt` and `model_36499.onnx`, with saved
+  parameters, robot assets and a checksum manifest.
+- [x] **Robot assets:** G1 and racket models and meshes in `robots/`.
+- [x] **ROS 2 deployment code:** MuJoCo and G1 backends, motion-capture bridge,
+  recording and replay in `deploy/`; external dependencies are still required.
+- [x] **Tests:** training and deployment test source files.
 
-**Coming soon**
+### TODO — not published
 
-- [ ] Reference-motion datasets used for training (`rollout_1000epis`,
-  `rollout_1000epis_relabelled`, ~430 MB each)
-- [ ] Full-flight fine-tuned policy checkpoint
+- [ ] **Isaac Lab mimic pipeline:** tracking-policy training, physical rollout
+  collection and target relabelling code; the `mimic/` package is not published.
+- [ ] **Mimic checkpoint:** historical `model_49999.pt` used for physical correction.
+- [ ] **Teacher reference dataset:** 1,000 NPZ/JSON pairs in `rollout_1000epis`;
+  neither the files nor a download link are published.
+- [ ] **Student reference dataset:** 1,000 NPZ/JSON pairs in
+  `rollout_1000epis_relabelled`; neither the files nor a download link are published.
+- [ ] **Full-flight policy checkpoint:** task code is published, its trained
+  checkpoint is not.
+- [ ] **Video-to-strike reconstruction pipeline:** source videos and the scripts
+  used to reconstruct and retarget the released strike clips are not included.
+- [ ] **Unitree SDK wrapper setup:** `deploy/setup_jazzy_env.sh` expects
+  `submodules/unitree_sdk2_wrapper`, but that directory and its submodule
+  registration are not included; a fresh clone lacks this dependency.
+
+### External data — obtain separately
+
+- **16 G1 LAFAN1 locomotion clips:** not bundled. Obtain the upstream run/walk
+  CSV files and use the published conversion script; see
+  [Reference generation](#reference-generation-tgmm). These third-party motions
+  are not part of the repository's release checklist.
+
+**Reproduction scope:** TGMM stages 1–2 are published, subject to obtaining
+locomotion data. End-to-end reference generation and Teacher/Student retraining
+still require the unpublished mimic pipeline and reference datasets. Published
+checkpoints do not remove these data requirements from the training-side play task.
 
 ## Repository layout
 
@@ -84,16 +111,18 @@ The deployment stack uses a separate ROS 2 environment (see [Deployment](#deploy
 
 ## Data
 
-- **Strike clips** (`data/djvkovic_npz_data_v5/`): G1 motions reconstructed from
-  ordinary tennis-practice video and retargeted to the robot, resampled to
-  50 fps. Each `*.npz` stores joint and body states; the `*.json` sidecar holds
-  the annotated `strike_frame`.
-- **Reference-motion dataset** (`artifacts/rollout_1000epis*/`): 1,000
-  dynamically corrected approach-and-strike references produced by
-  trajectory-guided motion matching and simulated imitation rollouts. The
-  teacher uses `rollout_1000epis`; the student uses the relabelled
-  `rollout_1000epis_relabelled`. Both are distributed separately because of
-  their size; place them under `artifacts/` (download link to be added).
+- **Published — strike clips:** `data/djvkovic_npz_data_v5/` contains 164 G1
+  strike motions reconstructed from tennis video, retargeted and resampled to
+  50 fps. Each NPZ stores joint/body states; its JSON records `strike_frame`.
+- **External — locomotion clips:** the 16 G1 LAFAN1 run/walk motions are not
+  bundled. Prepare them under `data/lafan_npz_data/runandwalk/` using the
+  conversion instructions below.
+- **TODO — Teacher references:** `artifacts/rollout_1000epis/` is the expected
+  location for 1,000 physically corrected approach-and-strike NPZ/JSON pairs.
+  This dataset is not published; no download link is available.
+- **TODO — Student references:** `artifacts/rollout_1000epis_relabelled/` is the
+  expected location for the corresponding references with relabelled ball
+  targets. This dataset is not published; no download link is available.
 
 ## Reference generation (TGMM)
 
@@ -170,10 +199,15 @@ planned ball targets (`rollout_1000epis`, used by the teacher); collecting with
 ball relabelling rewrites each target to the racket position actually reached
 at the strike frame and recomputes it in the frame-0 pelvis frame
 (`rollout_1000epis_relabelled`, used by the student), so that target labels
-match the executed motion. The resulting datasets will be released (see
-[Release status](#release-status)).
+match the executed motion. The physical-correction code, its tracking checkpoint and both resulting
+datasets are unpublished TODOs; no release date is specified.
 
 ## Quick start: run the released policy
+
+**Required data:** the command below loads the first 200 motions from
+`artifacts/rollout_1000epis_relabelled/`. That dataset is not published, so
+this command cannot run from a fresh clone alone. The motion-set TOML files
+configure dataset paths; they do not contain the motions.
 
 Play the released student in the training simulator with a browser viewer
 (open the printed URL, by default <http://localhost:8080>):
@@ -190,6 +224,12 @@ Use `--viewer native` for a local MuJoCo window. To run the exported ONNX
 policy through the ROS 2 stack instead, see [Deployment](#deployment).
 
 ## Training
+
+**Prerequisites:** Teacher training requires `artifacts/rollout_1000epis/`;
+Student training and full-flight fine-tuning require
+`artifacts/rollout_1000epis_relabelled/`. Both datasets are unpublished TODOs.
+The commands below document the training configuration, but require these
+data to be supplied before running.
 
 All tasks are registered in `athlete/src/athlete/goal_cond_tracking/config/g1/`;
 list them with `uv run list-envs`. Training logs go to `logs/rsl_rl/`.

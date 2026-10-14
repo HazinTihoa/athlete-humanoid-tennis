@@ -19,25 +19,37 @@
 
 ## 发布状态
 
-代码分阶段发布，本仓库目前包含：
+以下列表仅统计本仓库已公开的文件。TODO 项无法从全新克隆中获取，目前未提供发布日期或下载链接。
 
-**已发布**
+### 已开源／已发布
 
-- [x] 训练代码：时间自适应 Teacher、基于 TPPO 的 Student 蒸馏与 PPO 微调、Full-flight 微调任务（`athlete/`）
-- [x] 仿真与评估：本地窗口 / 浏览器（viser）可视化的 play、ONNX 策略回放、评估脚本
-- [x] MuJoCo 仿真与 Unitree G1 实机的部署框架（`deploy/`）
-- [x] 发布的 Student 策略：PyTorch checkpoint 和导出的 ONNX（`deploy/policies/m14_11/`）
-- [x] 冻结的 Teacher checkpoint（`checkpoints/teacher_model_29999.pt`）
-- [x] G1 + 球拍的机器人模型与网格（`robots/`）
-- [x] 164 个从视频重建的击球片段及击球帧标注（`data/djvkovic_npz_data_v5/`）
-- [x] 轨迹引导运动匹配（TGMM）：动作数据库构建、目标轨迹优化和运动学参考动作生成（`motion_matching/`）
-- [x] 本地 G1 LAFAN1 CSV 转 NPZ 脚本（`scripts/prepare_lafan_locomotion.py`）；不重新分发第三方动作文件
-- [x] 训练端和部署端的单元测试
+- [x] **Teacher 训练代码：**`athlete/src/athlete/goal_cond_tracking/` 中的时间自适应参考动作跟踪。
+- [x] **Student 训练代码：**`athlete/` 中的 TPPO 蒸馏、PPO 微调和 Full-flight 任务配置。
+- [x] **仿真与评估代码：**`athlete/` 和 `scripts/` 中的本地／viser 回放、ONNX 回放与 checkpoint 评估脚本。
+- [x] **TGMM 代码：**`motion_matching/` 中的数据库构建、目标轨迹优化、运动匹配和运动学参考采集。
+- [x] **走跑数据转换脚本：**`scripts/prepare_lafan_locomotion.py`，将自行获取的 G1 LAFAN1 CSV 转为本地 NPZ。
+- [x] **击球数据：**`data/djvkovic_npz_data_v5/` 中的 164 个 NPZ 和 164 个 JSON 标注，正手 97 条、反手 67 条。
+- [x] **Teacher 模型：**`checkpoints/teacher_model_29999.pt`。
+- [x] **Student 模型与 ONNX：**`deploy/policies/m14_11/model_36499.pt` 和 `model_36499.onnx`，附训练参数、机器人资源和校验清单。
+- [x] **机器人资源：**`robots/` 中的 G1 与球拍模型及网格。
+- [x] **ROS 2 部署代码：**`deploy/` 中的 MuJoCo／G1 后端、动捕桥接、录制和回放；仍需安装外部依赖。
+- [x] **测试代码：**训练端与部署端的测试源文件。
 
-**即将发布**
+### TODO — 尚未发布
 
-- [ ] 训练用的参考动作数据集（`rollout_1000epis`、`rollout_1000epis_relabelled`，各约 430 MB）
-- [ ] Full-flight 微调后的策略 checkpoint
+- [ ] **Isaac Lab mimic 流程：**动作跟踪策略训练、动力学 rollout 采集和球目标重新标注；`mimic/` 包尚未公开。
+- [ ] **Mimic 模型：**动力学修正使用的历史 `model_49999.pt`。
+- [ ] **Teacher 参考数据集：**`rollout_1000epis` 的 1000 对 NPZ／JSON；文件和下载链接均未发布。
+- [ ] **Student 参考数据集：**`rollout_1000epis_relabelled` 的 1000 对 NPZ／JSON；文件和下载链接均未发布。
+- [ ] **Full-flight 策略模型：**任务代码已开源，训练后的模型尚未发布。
+- [ ] **视频到击球动作的重建流程：**用于生成已发布击球片段的源视频、重建和重定向脚本未包含在仓库中。
+- [ ] **Unitree SDK wrapper 配置：**`deploy/setup_jazzy_env.sh` 依赖 `submodules/unitree_sdk2_wrapper`，但仓库未包含该目录及其 submodule 注册；全新克隆缺少此依赖。
+
+### 外部数据 — 需自行获取
+
+- **16 条 G1 LAFAN1 走跑动作：**未随仓库分发。请从上游获取 run／walk CSV，再运行已开源的转换脚本，见[参考动作生成](#参考动作生成tgmm)。这些第三方动作不属于本仓库的待发布数据。
+
+**复现范围：**获取外部走跑数据后，可使用已开源的 TGMM 第 1、2 步。端到端参考生成及 Teacher／Student 重新训练仍依赖未发布的 mimic 流程和参考数据集；训练端 play 示例也需要参考数据，只有模型文件还不够。
 
 ## 目录结构
 
@@ -69,11 +81,10 @@ uv sync
 
 ## 数据
 
-- **击球片段**（`data/djvkovic_npz_data_v5/`）：从普通网球练习视频中重建、重定向到机器人上的 G1 动作，
-  重采样到 50 fps。每个 `*.npz` 保存关节和刚体状态，同名 `*.json` 记录标注的 `strike_frame`（击球帧）。
-- **参考动作数据集**（`artifacts/rollout_1000epis*/`）：由轨迹引导运动匹配和仿真模仿 rollout 生成的
-  1000 条经过动力学修正的“移动 + 击球”参考动作。Teacher 使用 `rollout_1000epis`，Student 使用重新标注的
-  `rollout_1000epis_relabelled`。两者体积较大，会单独发布；下载后放在 `artifacts/` 下（下载链接待补充）。
+- **已发布 — 击球片段：**`data/djvkovic_npz_data_v5/` 中有 164 条从网球视频重建、重定向到 G1 并重采样到 50 fps 的动作。NPZ 保存关节／刚体状态，同名 JSON 记录 `strike_frame`。
+- **外部数据 — 走跑动作：**16 条 G1 LAFAN1 run／walk 动作未包含在仓库中；按下方转换说明生成到 `data/lafan_npz_data/runandwalk/`。
+- **TODO — Teacher 参考数据：**预期目录为 `artifacts/rollout_1000epis/`，包含 1000 对经过动力学修正的“移动 + 击球”NPZ／JSON。尚未发布，也没有下载链接。
+- **TODO — Student 参考数据：**预期目录为 `artifacts/rollout_1000epis_relabelled/`，保存对应的球目标重新标注版本。尚未发布，也没有下载链接。
 
 ## 参考动作生成（TGMM）
 
@@ -137,9 +148,11 @@ uv run python motion_matching/tennis_official_mm_mj.py \
 跟踪每条运动学参考动作，并以 50 Hz 按相同格式记录实际执行的动作，得到物理上一致的参考动作。
 采集两遍：一遍保留规划的来球目标（`rollout_1000epis`，供 Teacher 使用）；另一遍开启来球重新标注，把每个目标
 改写为击球帧时球拍实际到达的位置，并在第 0 帧的骨盆坐标系下重新计算（`rollout_1000epis_relabelled`，
-供 Student 使用），使目标标签与实际执行的动作一致。这两个数据集将会发布（见[发布状态](#发布状态)）。
+供 Student 使用），使目标标签与实际执行的动作一致。动力学修正代码、对应动作跟踪模型和两套输出数据均属于尚未发布的 TODO，目前没有确定发布日期。
 
 ## 快速开始：运行发布的策略
+
+**数据前提：**下方命令读取 `artifacts/rollout_1000epis_relabelled/` 中的前 200 条参考动作。该数据集尚未发布，因此仅克隆仓库无法运行此命令。动作集 TOML 仅配置数据路径，本身不包含动作数据。
 
 在训练用的仿真器中运行发布的 Student，并用浏览器查看（打开终端输出的地址，默认为 <http://localhost:8080>）：
 
@@ -154,6 +167,8 @@ uv run python -m athlete.scripts.play \
 使用 `--viewer native` 可以打开本地 MuJoCo 窗口。如果想通过 ROS 2 框架运行导出的 ONNX 策略，见[部署](#部署)。
 
 ## 训练
+
+**数据前提：**Teacher 训练需要 `artifacts/rollout_1000epis/`；Student 训练和 Full-flight 微调需要 `artifacts/rollout_1000epis_relabelled/`。两套数据均属于未发布的 TODO。下方命令用于说明训练配置，执行前必须补齐这些数据。
 
 所有任务都注册在 `athlete/src/athlete/goal_cond_tracking/config/g1/` 中，可以用 `uv run list-envs` 列出。
 训练日志保存在 `logs/rsl_rl/`。
