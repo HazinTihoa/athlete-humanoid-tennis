@@ -26,6 +26,14 @@ Unitree G1 反应式全身网球策略的训练与部署代码。
 
 - **Student 参考动作：**[Google Drive 下载](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing)。TGMM 生成的“移动 + 击球”动作经过 mimic policy rollout 后记录，并重新标注球目标。将 NPZ／JSON 文件直接放入 `artifacts/rollout_1000epis_relabelled/`。
 
+## 演示视频
+
+来自项目网页的首页实机视频与鼠标拖球仿真交互视频。点击预览可播放完整 MP4。
+
+| 实机回合 | 仿真交互 |
+| --- | --- |
+| [![Real-world rally](media/project-demos/real-rally.gif)](https://hazintihoa.github.io/ATHLETE/assets/video/hero-7strikes-1080.mp4) | [![Mouse-drag ball interaction in simulation](media/project-demos/simulation-drag.gif)](https://hazintihoa.github.io/ATHLETE/assets/video/sim-rally1.mp4) |
+
 ## 1. 环境配置
 
 - **部署仿真：**Ubuntu 24.04、系统 Python 3.12、ROS 2 Jazzy 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。请先安装 [ROS 2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)，确保 `/opt/ros/jazzy/setup.bash` 存在。有窗口 Demo 需要桌面显示环境。

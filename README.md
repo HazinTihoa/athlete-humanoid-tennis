@@ -27,6 +27,14 @@ Original dataset replay: three forehand and three backhand clips, shown at 1× s
 
 - **Student references:** [download from Google Drive](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing). TGMM-generated approach-and-strike motions recorded from mimic policy rollouts, with relabelled ball targets. Place the NPZ/JSON files directly under `artifacts/rollout_1000epis_relabelled/`.
 
+## Demonstration videos
+
+Clips from the project page: the homepage rally and mouse-drag ball interaction in simulation. Click a preview to play the full MP4.
+
+| Real-world rally | Interactive simulation |
+| --- | --- |
+| [![Real-world rally](media/project-demos/real-rally.gif)](https://hazintihoa.github.io/ATHLETE/assets/video/hero-7strikes-1080.mp4) | [![Mouse-drag ball interaction in simulation](media/project-demos/simulation-drag.gif)](https://hazintihoa.github.io/ATHLETE/assets/video/sim-rally1.mp4) |
+
 ## 1. Environment setup
 
 - **Deployment simulation:** Ubuntu 24.04, system Python 3.12, ROS 2 Jazzy and [uv](https://docs.astral.sh/uv/getting-started/installation/). Install [ROS 2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html) first; `/opt/ros/jazzy/setup.bash` must exist. The windowed demo needs a desktop display.
