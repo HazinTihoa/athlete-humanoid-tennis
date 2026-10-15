@@ -49,7 +49,7 @@ uv sync --frozen
 
 Run subsequent commands from the repository root. `uv run` automatically uses `.venv`; manual activation is not needed. Real-robot deployment is configured separately (see the deployment TODO below).
 
-## 2. Quick demo: MuJoCo without ROS
+### Quick demo: MuJoCo without ROS
 
 The ONNX model and robot assets are included. No reference-motion download, LAFAN1 dataset, or Teacher checkpoint is needed. G1 starts from a fixed standing pose, and physical incoming balls are sampled near the robot without motion matching.
 
@@ -67,11 +67,11 @@ uv run python scripts/demo_mujoco.py --headless --duration-s 20 --no-realtime
 
 For manual feeding, run `uv run python scripts/demo_mujoco.py --manual`, then click a robot-side first-bounce point in the separate court plot. This mode selects a bounce point; it is not the mouse-drag interface shown in the project-page video. Use `--onnx-policy-file PATH` to explicitly select another compatible Student model.
 
-## 3. Training workflow
+## 2. Training workflow
 
 - [ ] TODO: training instructions.
 
-## 4. Deployment workflow
+## 3. Deployment workflow
 
 - [ ] TODO: deployment instructions.
 

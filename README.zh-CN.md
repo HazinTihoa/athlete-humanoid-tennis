@@ -48,7 +48,7 @@ uv sync --frozen
 
 后续命令均在仓库根目录执行。`uv run` 自动使用 `.venv`，无需手动激活。实机部署环境另外配置，见下方部署 TODO。
 
-## 2. 快速 Demo：无 ROS 的 MuJoCo 仿真
+### 快速 Demo：无 ROS 的 MuJoCo 仿真
 
 ONNX 模型和机器人资源已包含在仓库中。**不需要下载参考动作数据、LAFAN1 数据或 Teacher checkpoint。**机器人从固定站姿启动，通过独立的物理来球采样自动发球，不做动作匹配。
 
@@ -66,11 +66,11 @@ uv run python scripts/demo_mujoco.py --headless --duration-s 20 --no-realtime
 
 手动发球可运行 `uv run python scripts/demo_mujoco.py --manual`，在单独的球场图中点击机器人一侧的一次落点。这是点击落点模式，与项目网页视频中的鼠标拖球界面不同。使用 `--onnx-policy-file PATH` 可明确指定另一份兼容的 Student 模型。
 
-## 3. 训练流程
+## 2. 训练流程
 
 - [ ] TODO：补充训练说明。
 
-## 4. 部署流程
+## 3. 部署流程
 
 - [ ] TODO：补充部署说明。
 
