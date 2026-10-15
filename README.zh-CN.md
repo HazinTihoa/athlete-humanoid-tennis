@@ -13,6 +13,14 @@ Unitree G1 反应式全身网球策略的训练与部署代码。
 - **G1 重定向网球击球动作：**[164 个 NPZ 及 JSON 标注](data/djvkovic_npz_data_v5/)，正手 97 条、反手 67 条。先用 [GVHMR](https://github.com/zju3dv/GVHMR) 从网球视频重建人体动作，再用 [GMR](https://github.com/YanjieZe/GMR) 重定向到 G1。已包含在仓库的 `data/djvkovic_npz_data_v5/` 中。
 - **G1 重定向 LAFAN1 走跑动作：**[Hugging Face 下载](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset/tree/main/g1)。使用其中 16 个 `run*.csv`／`walk*.csv` 文件，经 `scripts/prepare_lafan_locomotion.py` 转换到 `data/lafan_npz_data/runandwalk/`。该上游数据由原维护者单独提供。
 
+原始数据回放：正手、反手各 3 条，以 1× 速度播放。这是 164 条源动作数据的运动学回放，不是 mimic policy rollout。
+
+| 正手（`fh_01`、`fh_32`、`fh_64`） | 反手（`bh_01`、`bh_22`、`bh_45`） |
+| --- | --- |
+| [![Forehand replay](media/strike-replays/forehand.gif)](media/strike-replays/forehand.mp4) | [![Backhand replay](media/strike-replays/backhand.gif)](media/strike-replays/backhand.mp4) |
+
+[Forehand MP4](media/strike-replays/forehand.mp4) · [Backhand MP4](media/strike-replays/backhand.mp4)
+
 ### 生成动作数据
 
 - **Student 参考动作：**[Google Drive 下载](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing)。TGMM 生成的“移动 + 击球”动作经过 mimic policy rollout 后记录，并重新标注球目标。将 NPZ／JSON 文件直接放入 `artifacts/rollout_1000epis_relabelled/`。

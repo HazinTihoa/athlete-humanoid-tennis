@@ -14,6 +14,14 @@ Training and deployment code for reactive whole-body tennis on the Unitree G1.
 - **G1-retargeted tennis strikes:** [164 NPZ clips and JSON annotations](data/djvkovic_npz_data_v5/) — 97 forehand, 67 backhand. Human motions are reconstructed from tennis videos using [GVHMR](https://github.com/zju3dv/GVHMR), then retargeted to the G1 using [GMR](https://github.com/YanjieZe/GMR). Included in this repository at `data/djvkovic_npz_data_v5/`.
 - **G1-retargeted LAFAN1 locomotion:** [download from Hugging Face](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset/tree/main/g1). Use the 16 `run*.csv` / `walk*.csv` files and convert them with `scripts/prepare_lafan_locomotion.py` into `data/lafan_npz_data/runandwalk/`. The upstream data are provided separately by their maintainers.
 
+Original dataset replay: three forehand and three backhand clips, shown at 1× speed. These are kinematic replays of the 164-clip source dataset, not mimic-policy rollouts.
+
+| Forehand (`fh_01`, `fh_32`, `fh_64`) | Backhand (`bh_01`, `bh_22`, `bh_45`) |
+| --- | --- |
+| [![Forehand replay](media/strike-replays/forehand.gif)](media/strike-replays/forehand.mp4) | [![Backhand replay](media/strike-replays/backhand.gif)](media/strike-replays/backhand.mp4) |
+
+[Forehand MP4](media/strike-replays/forehand.mp4) · [Backhand MP4](media/strike-replays/backhand.mp4)
+
 ### Generated motions
 
 - **Student references:** [download from Google Drive](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing). TGMM-generated approach-and-strike motions recorded from mimic policy rollouts, with relabelled ball targets. Place the NPZ/JSON files directly under `artifacts/rollout_1000epis_relabelled/`.
