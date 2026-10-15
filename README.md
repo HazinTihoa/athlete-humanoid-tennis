@@ -29,8 +29,6 @@ Original dataset replay: three forehand and three backhand clips, shown at 1× s
 
 ## Demonstration videos
 
-Clips from the project page: the homepage rally and mouse-drag ball interaction in simulation. Click a preview to play the full MP4.
-
 | Real-world rally | Interactive simulation |
 | --- | --- |
 | [![Real-world rally](media/project-demos/real-rally.gif)](https://hazintihoa.github.io/ATHLETE/assets/video/hero-7strikes-1080.mp4) | [![Mouse-drag ball interaction in simulation](media/project-demos/simulation-drag.gif)](https://hazintihoa.github.io/ATHLETE/assets/video/sim-rally1.mp4) |

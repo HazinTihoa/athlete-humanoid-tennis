@@ -28,8 +28,6 @@ Unitree G1 反应式全身网球策略的训练与部署代码。
 
 ## 演示视频
 
-来自项目网页的首页实机视频与鼠标拖球仿真交互视频。点击预览可播放完整 MP4。
-
 | 实机回合 | 仿真交互 |
 | --- | --- |
 | [![Real-world rally](media/project-demos/real-rally.gif)](https://hazintihoa.github.io/ATHLETE/assets/video/hero-7strikes-1080.mp4) | [![Mouse-drag ball interaction in simulation](media/project-demos/simulation-drag.gif)](https://hazintihoa.github.io/ATHLETE/assets/video/sim-rally1.mp4) |
