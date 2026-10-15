@@ -30,9 +30,7 @@
 ### TODO
 
 - [ ] **生成的参考数据集：**Teacher（`rollout_1000epis`）与 Student（`rollout_1000epis_relabelled`），各 1000 条动作。
-- [ ] **参考生成流程的其余部分：**视频重建／重定向、Isaac Lab mimic 代码及其 checkpoint。
-- [ ] **Full-flight 策略 checkpoint。**
-- [ ] **Unitree SDK wrapper 依赖配置。**
+- [ ] **详细复现说明：**环境配置、数据准备、TGMM 数据库构建与参考动作生成、策略训练、评估和部署。
 
 ## 目录结构
 

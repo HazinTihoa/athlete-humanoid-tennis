@@ -35,9 +35,7 @@ reference motions ──▶ teacher (phase + deadline) ──▶ student (DAgger
 ### TODO
 
 - [ ] **Generated reference datasets:** Teacher (`rollout_1000epis`) and Student (`rollout_1000epis_relabelled`), 1,000 motions each.
-- [ ] **Remaining reference-generation pipeline:** video reconstruction/retargeting and Isaac Lab mimic code with its checkpoint.
-- [ ] **Full-flight policy checkpoint.**
-- [ ] **Unitree SDK wrapper dependency setup.**
+- [ ] **Detailed reproduction guide:** environment setup, data preparation, TGMM database construction and reference generation, policy training, evaluation and deployment.
 
 ## Repository layout
 
