@@ -2,315 +2,98 @@
 
 [English](README.md) | **简体中文**
 
-[项目网站与交互演示](https://hazintihoa.github.io/athlete.github.io/)
+[项目网页与交互演示](https://hazintihoa.github.io/ATHLETE/) · [论文](https://arxiv.org/abs/2610.13572)
 
-**快速导航：**[运行已发布策略](#快速开始运行发布的策略) ·
-[生成参考动作](#参考动作生成tgmm) · [安装](#安装) · [部署](#部署)
+Unitree G1 反应式全身网球策略的训练与部署代码。
 
-本仓库包含在 Unitree G1 人形机器人上训练、仿真和部署 ATHLETE 反应式全身网球策略的代码。
+## 1. 环境配置
 
-一个**时间自适应的 Teacher** 跟踪经过动力学修正的全身参考动作，同时根据击球截止时间调整动作相位。
-**反应式 Student** 通过在线 DAgger 和特权意图对齐从 Teacher 蒸馏得到，再用 PPO 和网球任务奖励进行微调。
-部署时，Student 只依赖机器人状态、来球观测和落点目标，不需要参考动作、在线动作检索或显式规划器。
+- **部署仿真：**Ubuntu 24.04、系统 Python 3.12、ROS 2 Jazzy 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。请先安装 [ROS 2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)，确保 `/opt/ros/jazzy/setup.bash` 存在。有窗口 Demo 需要桌面显示环境。
+- **训练：**独立的 Python 3.13 环境，以及支持 CUDA 12.8 的 NVIDIA GPU；不使用部署环境。
 
+配置仿真环境：
+
+```bash
+git clone https://github.com/HazinTihoa/athlete-humanoid-tennis.git
+cd athlete-humanoid-tennis
+uv venv --no-project --python /usr/bin/python3 deploy/.venv
+uv pip install --python deploy/.venv/bin/python -r deploy/requirements-jazzy.txt
 ```
-参考动作 ──▶ Teacher（相位 + 截止时间）──▶ Student（DAgger + PPO）──▶ ONNX ──▶ ROS 2（仿真 / G1）
+
+后续命令均在仓库根目录执行。纯仿真不需要 Unitree 硬件 SDK，也不需要参考动作数据集。
+
+仅进行训练时，额外安装锁定的项目依赖：
+
+```bash
+uv python install 3.13
+uv sync --frozen
 ```
+
+## 2. 快速 Demo：仿真部署
+
+在 MuJoCo ROS 2 仿真器中运行已发布的 Student ONNX 策略：
+
+```bash
+bash -c 'source /opt/ros/jazzy/setup.bash; bash deploy/run_tppo.sh sim g1_tppo_student_m14_11.yaml'
+```
+
+在终端按 **a** 进入 home，等待至少 3 秒，再按 **x** 开启策略控制；仿真会自动发球。按 **b** 阻尼，按 **q** 退出。使用的模型为 `deploy/policies/m14_11/model_36499.onnx`，观测维度 631、关节动作维度 29、控制频率 50 Hz。
+
+没有桌面显示时，可运行以下 8 秒启动检查；仿真保持阻尼状态，到时自动退出：
+
+```bash
+bash -c 'source /opt/ros/jazzy/setup.bash; bash deploy/run_tppo.sh sim g1_tppo_student_m14_11.yaml --headless --duration-s 8'
+```
+
+## 3. 训练流程
+
+1. **生成参考动作：**用 `motion_matching/` 构建 TGMM 数据库并采集运动学“移动 + 击球”动作。仓库包含 164 条击球动作；16 条 G1 LAFAN1 走跑动作需另行获取，并用 `scripts/prepare_lafan_locomotion.py` 转换。动力学修正后得到 Teacher／Student 参考数据。
+2. **训练 Teacher：**通过时间自适应跟踪学习生成的参考动作。
+3. **训练 Student：**通过在线 DAgger 从 Teacher 蒸馏，再用 PPO 微调；后续可使用 Full-flight 任务配置进行落点奖励微调。
+
+**数据前提：**两套生成的参考数据尚未发布。执行下方训练命令前，需将 `ep_0000`–`ep_0199` 的 NPZ／JSON 文件分别放入 `artifacts/rollout_1000epis/`（Teacher）和 `artifacts/rollout_1000epis_relabelled/`（Student）。TOML 只配置路径，不包含数据。全新克隆可以运行上方仿真 Demo，但补齐数据前无法复现训练。
+
+Teacher：
+
+```bash
+uv run train Mjlab-PhaseAccel-DeadlineProjection-MultiTarget-Tracking-Flat-Unitree-G1-Root-Pos-Obs \
+  --motion-config athlete/src/athlete/motion_sets/motion_train_configs/rollout_1000epis_first200_phase.toml \
+  --env.scene.num-envs 8192 --agent.max-iterations 30000 \
+  --agent.logger tensorboard --gpu-ids "[0]"
+```
+
+Student（使用仓库提供的冻结 Teacher 模型）：
+
+```bash
+uv run train Mjlab-Tennis-SmallCourt-IntentRefLatent-PPOPlusDistill005-GlobalRoot-RelativeSweet-BallDelay-RootLanding-Unitree-G1 \
+  --motion-config athlete/src/athlete/motion_sets/motion_train_configs/rollout_1000epis_relabelled_first200_phase.toml \
+  --agent.algorithm.teacher-checkpoint checkpoints/teacher_model_29999.pt \
+  --env.scene.num-envs 8192 --env.scene.terrain.num-envs 8192 \
+  --agent.logger tensorboard --gpu-ids "[0]"
+```
+
+上方命令使用 8192 个并行环境；显存不足时需降低环境数量。日志与 checkpoint 保存在 `logs/rsl_rl/`。快速 Demo 不需要运行训练。
+
+## 4. 部署流程
+
+- **仿真部署：**使用已发布的 ONNX 和 `deploy/configs/g1_tppo_student_m14_11.yaml`，按上方快速 Demo 运行。导出新模型前，可用 `uv run python scripts/export_intent_checkpoint.py --help` 查看参数。
+- **G1 实机：**同一策略／控制配置切换为硬件后端，机器人与球的状态由外部动捕提供。需要 ROS 2 Jazzy、Unitree SDK wrapper、已配置的机器人网络和 NatNet 桥接。仓库未包含 SDK wrapper，全新克隆尚不能直接完成硬件部署。
+- **录制：**在仿真命令末尾加 `--record`，另外需要支持 MCAP 的 ROS 2 rosbag2；输出目录为 `deploy/recordings/`。
 
 ## 发布状态
 
 ### 已发布
 
-- [x] **训练代码：**Teacher 训练、Student 蒸馏与 PPO 微调（`athlete/`）。
+- [x] **训练代码：**Teacher、Student 蒸馏与 PPO 微调（`athlete/`）。
 - [x] **部署代码：**MuJoCo 仿真与 G1 实机部署（`deploy/`）。
-- [x] **TGMM：**动作数据库构建与“移动 + 击球”参考动作生成（`motion_matching/`）。
+- [x] **TGMM：**数据库构建与运动学参考生成（`motion_matching/`）。
 - [x] **G1 重定向网球数据集：**164 个 NPZ 及 JSON 标注，正手 97 条、反手 67 条（`data/djvkovic_npz_data_v5/`）。
 - [x] **Student checkpoint 与 ONNX：**`model_36499.pt` 和 `model_36499.onnx`（`deploy/policies/m14_11/`）。
 
 ### TODO
 
 - [ ] **生成的参考数据集：**Teacher（`rollout_1000epis`）与 Student（`rollout_1000epis_relabelled`），各 1000 条动作。
-- [ ] **详细复现说明：**环境配置、数据准备、TGMM 数据库构建与参考动作生成、策略训练、评估和部署。
-
-## 目录结构
-
-| 路径 | 内容 |
-|---|---|
-| `athlete/` | Python 包：任务、MDP 项、TPPO 蒸馏、训练 / play 脚本、测试 |
-| `athlete/src/athlete/goal_cond_tracking/` | 环境配置（`config/g1/`）、MDP 项（`mdp/`）、RL runner 与 TPPO（`rl/`） |
-| `athlete/src/athlete/motion_sets/` | 动作库，以及通过 `--motion-config` 传入的动作集 TOML |
-| `motion_matching/` | 轨迹引导运动匹配：数据库构建、CT-OC 目标轨迹优化、参考动作生成 |
-| `motion_db/` | 运动匹配资源（34 刚体增广映射；生成的数据库也写在这里） |
-| `deploy/` | ROS 2 Jazzy 部署框架（MuJoCo 仿真和 G1 实机），见[部署](#部署) |
-| `deploy/policies/m14_11/` | 发布的 Student 策略（`.pt` + `.onnx`）及其机器人资源 |
-| `checkpoints/` | 蒸馏和微调使用的冻结 Teacher checkpoint |
-| `robots/` | G1 + 球拍的 MuJoCo 模型与网格 |
-| `data/djvkovic_npz_data_v5/` | 164 个从视频重建的 G1 击球片段（正手 97、反手 67），附击球帧信息 |
-| `scripts/` | checkpoint 导出与评估工具 |
-
-## 安装
-
-训练使用 Python 3.13 和 [uv](https://docs.astral.sh/uv/)，需要支持 CUDA 12.8 的 GPU。
-
-```bash
-git clone https://github.com/HazinTihoa/athlete-humanoid-tennis.git
-cd athlete-humanoid-tennis
-uv sync
-```
-
-所有训练端命令都在仓库根目录下用 `uv run` 执行。部署框架使用单独的 ROS 2 环境（见[部署](#部署)）。
-
-## 数据
-
-- **已发布 — 击球片段：**`data/djvkovic_npz_data_v5/` 中有 164 条从网球视频重建、重定向到 G1 并重采样到 50 fps 的动作。NPZ 保存关节／刚体状态，同名 JSON 记录 `strike_frame`。
-- **外部数据 — 走跑动作：**16 条 G1 LAFAN1 run／walk 动作未包含在仓库中；按下方转换说明生成到 `data/lafan_npz_data/runandwalk/`。
-- **TODO — Teacher 参考数据：**预期目录为 `artifacts/rollout_1000epis/`，包含 1000 对经过动力学修正的“移动 + 击球”NPZ／JSON。尚未发布，也没有下载链接。
-- **TODO — Student 参考数据：**预期目录为 `artifacts/rollout_1000epis_relabelled/`，保存对应的球目标重新标注版本。尚未发布，也没有下载链接。
-
-## 参考动作生成（TGMM）
-
-轨迹引导运动匹配（TGMM）把可复用的走跑动作和从视频重建的击球动作拼接成“移动 + 击球”参考动作。
-整个流程分三步，第 1、2 步的代码在 `motion_matching/` 中。
-
-第 1 步所需的 16 条 G1 走跑动作**未包含在本仓库中**。它们源自
-[Ubisoft LAFAN1](https://github.com/ubisoft/ubisoft-laforge-animation-dataset)，由
-[LAFAN1 Retargeting Dataset](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset)
-的维护者重定向到 G1；原始实验再通过 Isaac Lab 正向运动学将 30 fps CSV 转换为 50 fps NPZ。Ubisoft 的
-[CC BY-NC-ND 4.0 许可](https://github.com/ubisoft/ubisoft-laforge-animation-dataset/blob/master/license.txt)
-未授权公开分发改编后的动作数据，因此转换后的 NPZ 仅保留在本地，并被 Git 忽略。请从上游获取数据并遵守适用许可。
-本仓库提供 MuJoCo 转换脚本，可在本地生成兼容的 NPZ；其中的刚体速度可能与原始 Isaac Lab 记录不同，
-因此不能逐字节复现原始训练输入：
-
-```bash
-# 在 ATHLETE 仓库根目录运行；需另外安装 Hugging Face CLI。
-hf download lvhaidong/LAFAN1_Retargeting_Dataset --repo-type dataset \
-  --include 'g1/run*.csv' --include 'g1/walk*.csv' \
-  --local-dir /path/to/lafan1-retargeted
-
-uv run python scripts/prepare_lafan_locomotion.py \
-  --input-dir /path/to/lafan1-retargeted/g1 \
-  --output-dir data/lafan_npz_data/runandwalk
-```
-
-输出目录应包含 4 条 `run*.npz` 和 12 条 `walk*.npz`。如已有转换后的 NPZ，也可以直接复制到该目录。
-下方的数据库构建脚本会直接读取这些文件。
-
-先安装可选依赖：
-
-```bash
-uv sync --extra motion-matching
-```
-
-**1. 构建运动匹配数据库**，输入为 LAFAN1 走跑数据（`data/lafan_npz_data/runandwalk/`，16 段重定向到 G1 的
-跑步 / 行走序列）和击球片段：
-
-```bash
-uv run python motion_matching/build_official_mm_db.py \
-  --input-dir data/lafan_npz_data/runandwalk \
-  --strike-dir data/djvkovic_npz_data_v5 \
-  --output-dir motion_db/official_tennis_runwalk_hand33
-```
-
-**2. 生成运动学参考动作。**对每个随机采样的来球，先用 CasADi 求解一个连续时间最优控制问题，规划根节点
-到击球切入点的轨迹；运动匹配用走跑片段跟随这条轨迹；最后通过惯性化（inertialization）混合切入选中的击球片段：
-
-```bash
-uv run python motion_matching/tennis_official_mm_mj.py \
-  --db_file motion_db/official_tennis_runwalk_hand33 \
-  --config motion_matching/tennis_official_mm_config.yaml \
-  --collect 1000 --headless
-```
-
-生成的片段以 `ep_XXXX.npz`（与击球片段相同的 34 刚体格式）保存在 `data/generated/collected_episodes/`，
-同名 JSON 记录击球帧和来球目标。去掉 `--collect --headless`（可加 `--interactive --ghost`）可以在 MuJoCo
-窗口中交互式地查看生成过程。
-
-**3. 通过仿真模仿进行动力学修正（本仓库不包含）。**用一个在 Isaac Lab 中训练的动作跟踪策略，在物理仿真里
-跟踪每条运动学参考动作，并以 50 Hz 按相同格式记录实际执行的动作，得到物理上一致的参考动作。
-采集两遍：一遍保留规划的来球目标（`rollout_1000epis`，供 Teacher 使用）；另一遍开启来球重新标注，把每个目标
-改写为击球帧时球拍实际到达的位置，并在第 0 帧的骨盆坐标系下重新计算（`rollout_1000epis_relabelled`，
-供 Student 使用），使目标标签与实际执行的动作一致。动力学修正代码、对应动作跟踪模型和两套输出数据均属于尚未发布的 TODO，目前没有确定发布日期。
-
-## 快速开始：运行发布的策略
-
-**数据前提：**下方命令读取 `artifacts/rollout_1000epis_relabelled/` 中的前 200 条参考动作。该数据集尚未发布，因此仅克隆仓库无法运行此命令。动作集 TOML 仅配置数据路径，本身不包含动作数据。
-
-在训练用的仿真器中运行发布的 Student，并用浏览器查看（打开终端输出的地址，默认为 <http://localhost:8080>）：
-
-```bash
-uv run python -m athlete.scripts.play \
-  Mjlab-Tennis-SmallCourt-IntentRefLatent-PPOPlusDistill005-GlobalRoot-RelativeSweet-BallDelay-RootLanding-Unitree-G1 \
-  --motion-config athlete/src/athlete/motion_sets/motion_train_configs/rollout_1000epis_relabelled_first200_phase.toml \
-  --checkpoint-file deploy/policies/m14_11/model_36499.pt \
-  --num-envs 1 --viewer viser --physical-ball True --fast-play False
-```
-
-使用 `--viewer native` 可以打开本地 MuJoCo 窗口。如果想通过 ROS 2 框架运行导出的 ONNX 策略，见[部署](#部署)。
-
-## 训练
-
-**数据前提：**Teacher 训练需要 `artifacts/rollout_1000epis/`；Student 训练和 Full-flight 微调需要 `artifacts/rollout_1000epis_relabelled/`。两套数据均属于未发布的 TODO。下方命令用于说明训练配置，执行前必须补齐这些数据。
-
-所有任务都注册在 `athlete/src/athlete/goal_cond_tracking/config/g1/` 中，可以用 `uv run list-envs` 列出。
-训练日志保存在 `logs/rsl_rl/`。
-
-### 1. Teacher
-
-Teacher 通过相位加速度控制和截止时间投影来跟踪参考动作：
-
-```bash
-uv run train Mjlab-PhaseAccel-DeadlineProjection-MultiTarget-Tracking-Flat-Unitree-G1-Root-Pos-Obs \
-  --motion-config athlete/src/athlete/motion_sets/motion_train_configs/rollout_1000epis_first200_phase.toml \
-  --env.scene.num-envs 8192 --agent.max-iterations 30000
-```
-
-训练得到的 Teacher 已提供为 `checkpoints/teacher_model_29999.pt`。
-
-### 2. Student 蒸馏与 PPO 微调
-
-Student 使用 TPPO（`athlete/src/athlete/goal_cond_tracking/rl/tppo.py`）训练，它结合了从冻结 Teacher
-进行的在线 DAgger 动作蒸馏，以及基于网球奖励的 PPO：
-
-```bash
-uv run train \
-  Mjlab-Tennis-SmallCourt-IntentRefLatent-PPOPlusDistill005-GlobalRoot-RelativeSweet-BallDelay-RootLanding-Unitree-G1 \
-  --motion-config athlete/src/athlete/motion_sets/motion_train_configs/rollout_1000epis_relabelled_first200_phase.toml \
-  --agent.algorithm.teacher-checkpoint checkpoints/teacher_model_29999.pt \
-  --env.scene.num-envs 8192 --env.scene.terrain.num-envs 8192 \
-  --agent.logger tensorboard --gpu-ids "[0]"
-```
-
-### 3. Full-flight 微调
-
-从训练好的 Student 继续训练，让每个 episode 持续到击球后球的完整飞行结束，并奖励实际落点：
-
-```bash
-uv run train Mjlab-Tennis-SmallCourt-M14-11-FullFlight-ActualLanding-Std0-FootForce20-Unitree-G1 \
-  --motion-config athlete/src/athlete/motion_sets/motion_train_configs/rollout_1000epis_relabelled_first200_phase.toml \
-  --resume-checkpoint deploy/policies/m14_11/model_36499.pt --agent.resume True \
-  --agent.algorithm.teacher-checkpoint checkpoints/teacher_model_29999.pt \
-  --env.scene.num-envs 8192 --env.scene.terrain.num-envs 8192 \
-  --env.commands.motion.incoming-ball-failure-trajectory-probability 0.05 \
-  --agent.max-iterations 30000 --agent.save-interval 500 \
-  --agent.logger tensorboard --gpu-ids "[0]"
-```
-
-带回位速度项和击球后静止项的变体注册在 `full_flight_return_home.py` 中。
-
-### 导出 checkpoint 为 ONNX
-
-```bash
-uv run python scripts/export_intent_checkpoint.py --help
-```
-
-## 发布的策略
-
-`deploy/policies/m14_11/` 包含 ATHLETE 反应式 Student 策略的最终 checkpoint，完整训练了 36,499 轮。
-
-### 文件
-
-- `model_36499.pt`：原始训练 checkpoint，包含训练状态。
-- `model_36499.onnx`：导出的 Student，包含 z_S 意图编码器，不需要 Teacher 或未来参考动作输入。
-- `params/agent.yaml`、`params/env.yaml`：训练时保存的参数快照（仅供参考）。
-- `robot/g1.xml`：训练使用的 G1 + 球拍模型，网格路径已改为相对本目录。
-- `robot/g1_with_racket_collision.xml`：额外包含训练时在运行中创建的球拍碰撞体和标称惯性。
-- `robot/meshes/`：XML 引用的全部 36 个网格，包括球拍。
-- `robot/LICENSE.Unitree`：Unitree G1 网格的 BSD-3-Clause 许可证。
-- `manifest.json`：来源、文件大小和 SHA-256 校验值。
-
-### 接口
-
-- ONNX 输入 `obs` 为 631 维，输出 `actions` 为 29 维。
-- 输入由当前 Student 观测（136 维）、状态历史（465 维）和来球历史（30 维）拼接而成。
-- 包含全局根节点 XYZ；落点目标在实时根节点坐标系下表示；甜区速度相对骨盆定义。
-- 控制周期 20 ms；训练物理步长 2.5 ms，decimation 为 8。
-- 训练结束时落点课程的标准差为 1.0 m。训练中来球观测有 20 ± 10 ms 的延迟（截断在 0–50 ms），
-  感知缓存不包含在 ONNX 计算图中。
-
-XML 文件只描述机器人本身：球场、发球、PD 参数和观测拼接由训练和部署代码提供，随机化的物理参数也没有
-写进 XML。该策略尚未针对无人值守的实机运行做过安全验证。
-
-已验证：ONNX 输出与该 checkpoint 的 PyTorch Student 一致；打包后的基础 XML 与原模型的数组一致；
-带碰撞体的 XML 可以独立编译。
-
-## 部署
-
-基于 ROS 2 的异步框架，在 MuJoCo 或 Unitree G1 上运行导出的 ATHLETE Student 策略。仿真和实机共用同一个
-控制节点、观测构建和状态机，只是后端不同。下面的命令在仓库根目录执行；`source deploy/setup_deploy.zsh`
-会切换到 `deploy/` 目录，之后同一终端里的路径都相对于 `deploy/`。
-
-发布的策略为 `deploy/policies/m14_11/model_36499.onnx`（631 维观测，29 维关节动作，50 Hz），
-对应的部署配置为 `deploy/configs/g1_tppo_student_m14_11.yaml`。
-
-### 0. 环境
-
-部署框架在 ROS 2 Jazzy 之上使用独立的 Python 3.12 虚拟环境（ROS 2 Jazzy 固定使用 Python 3.12，
-训练使用 Python 3.13）：
-
-    bash deploy/setup_jazzy_env.sh      # 只需一次：创建 deploy/.venv
-    source deploy/setup_deploy.zsh      # 每个终端都要执行，同时会进入 deploy/
-
-### 1. 仿真
-
-启动 MuJoCo 和 Student 策略。键盘：`a` = 回到初始姿态，`x` = 进入控制，`b` = 阻尼，`q` = 退出。
-
-    source deploy/setup_deploy.zsh
-    bash run_tppo.sh sim g1_tppo_student_m14_11.yaml
-
-仿真中，每个球的落点目标在起始坐标系 (5, 0) m 附近采样，标准差为 `sim_landing_target_sampling` 中保存的
-课程值；半径 0.5 m 的黄色圆环标出目标，`deploy_robot/landing_target` 把它发送给 Student，Student 再
-转换到实时根节点坐标系。策略推理、状态机和命令超时都使用 MuJoCo 仿真时间，因此可视化窗口卡顿不会消耗超时预算。
-
-### 2. 动捕桥接（仅实机）
-
-`estimation/mocap/natnet_policy_bridge.py` 把 NatNet 的 `/rigid_bodies`（来自 OptiTrack/Motive 驱动的
-`G1_pelvis` 和 `Ball` 刚体）转换为策略使用的骨盆位姿、球位置和球速度。实测的球位置会立即发布；
-120 Hz 定时器只在没有新的有效帧时补充预测值。实机启动脚本已经包含桥接，只有调试时才需要单独运行：
-
-    source deploy/setup_deploy.zsh
-    python estimation/mocap/natnet_policy_bridge.py --config g1_tppo_student_m14_11.yaml
-
-在 RViz 中查看桥接输出（Fixed Frame 设为 `world`）：
-
-    rviz2 -d rviz/natnet_policy_bridge.rviz
-
-### 3. 实机
-
-启动动捕桥接、策略节点和 Unitree 硬件后端，并允许发送 LowCmd。只有设置了 `TPPO_ENABLE_REAL_ROBOT=YES`
-并传入 `enable` 模式时，实机流程才会真正发送命令，否则只读。
-遥控器：`B` = 阻尼，`A` = 回到初始姿态，`Y` = 校准骨盆，`X` = 进入控制；键盘 `q` 进入阻尼并退出。
-
-    source deploy/setup_deploy.zsh
-    export TPPO_ENABLE_REAL_ROBOT=YES
-    bash run_tppo.sh real g1_tppo_student_m14_11.yaml <network-interface> enable --record
-
-实机上的命令看门狗使用 100 ms 的墙钟超时。触发严重倾斜保护后，请退出并重新启动，不要反复按 `x`。
-
-**安全提示。**请先在仿真中测试；前几次实机运行时把机器人挂在吊架上，并让阻尼按键随时可按。
-该策略尚未针对无人值守运行做过安全验证。
-
-### 4. 录制与回放
-
-在仿真或实机命令末尾加上 `--record`，会把机器人状态、策略输入输出和动捕数据录制到
-`deploy/recordings/<时间>_<后端>_<配置名>/`。
-
-在 MuJoCo 中回放录制的部署数据：
-
-    python estimation/mocap/replay_deploy_bag_mujoco.py \
-      recordings/<recording-dir> --config g1_tppo_student_m14_11.yaml
-
-只回放录制的来球数据：
-
-    python estimation/mocap/replay_bag_ball.py \
-      recordings/<recording-dir> --config g1_tppo_student_m14_11.yaml
-
-## 测试
-
-```bash
-uv run pytest athlete/tests
-```
-
-部署端的测试在部署环境中运行：`source deploy/setup_deploy.zsh && python -m pytest tests`。
+- [ ] **详细复现说明：**环境配置、数据准备、TGMM、训练、评估与部署。
 
 ## 致谢
 
