@@ -63,12 +63,6 @@ Manual feeding — click a robot-side bounce point in the court plot:
 uv run python scripts/demo_mujoco.py --manual
 ```
 
-Headless, 20 simulated seconds:
-
-```bash
-uv run python scripts/demo_mujoco.py --headless --duration-s 20 --no-realtime
-```
-
 ## 2. Training workflow
 
 - [ ] TODO: training instructions.

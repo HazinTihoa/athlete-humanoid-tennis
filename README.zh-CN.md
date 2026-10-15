@@ -62,12 +62,6 @@ uv run python scripts/demo_mujoco.py
 uv run python scripts/demo_mujoco.py --manual
 ```
 
-无窗口运行 20 秒仿真：
-
-```bash
-uv run python scripts/demo_mujoco.py --headless --duration-s 20 --no-realtime
-```
-
 ## 2. 训练流程
 
 - [ ] TODO：补充训练说明。
