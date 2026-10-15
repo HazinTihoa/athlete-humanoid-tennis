@@ -50,8 +50,7 @@ uv sync --frozen
 
 ## 2. 快速 Demo：无 ROS 的 MuJoCo 仿真
 
-1. 从 [Google Drive](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing) 下载 **Student 参考数据**。至少将 `ep_0000.npz`／`ep_0000.json` 至 `ep_0199.npz`／`ep_0199.json` 直接放入 `artifacts/rollout_1000epis_relabelled/`，不要额外嵌套一层目录。这些数据用于初始化和来球采样；此 Demo 不需要 LAFAN1 数据或 Teacher checkpoint。
-2. 启动 Demo：
+ONNX 模型和机器人资源已包含在仓库中。**不需要下载参考动作数据、LAFAN1 数据或 Teacher checkpoint。**机器人从固定站姿启动，通过独立的物理来球采样自动发球，不做动作匹配。
 
 ```bash
 uv run python scripts/demo_mujoco.py

@@ -51,8 +51,7 @@ Run subsequent commands from the repository root. `uv run` automatically uses `.
 
 ## 2. Quick demo: MuJoCo without ROS
 
-1. Download the **Student references** from [Google Drive](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing). Place at least `ep_0000.npz` / `ep_0000.json` through `ep_0199.npz` / `ep_0199.json` directly under `artifacts/rollout_1000epis_relabelled/`, without an extra nested folder. These files supply initialization and incoming-ball sampling; LAFAN1 data and a Teacher checkpoint are not needed for this demo.
-2. Launch the demo:
+The ONNX model and robot assets are included. No reference-motion download, LAFAN1 dataset, or Teacher checkpoint is needed. G1 starts from a fixed standing pose, and physical incoming balls are sampled near the robot without motion matching.
 
 ```bash
 uv run python scripts/demo_mujoco.py

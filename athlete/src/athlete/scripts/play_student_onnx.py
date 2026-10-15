@@ -203,7 +203,7 @@ class StudentOnnxPlayConfig:
   """Configuration for standalone Student ONNX playback."""
 
   onnx_policy_file: Path
-  motion_config: Path = DEFAULT_MOTION_CONFIG
+  motion_config: Path | None = DEFAULT_MOTION_CONFIG
   viewer: Literal["native"] = "native"
   court_preset: Literal["standard", "small"] = "standard"
   seed: int = 42
@@ -317,6 +317,24 @@ class _StepReport:
   actual_hit_time_s: float | None
   released: bool
   episode_complete: bool
+
+
+def _standing_initial_state(default_joint_pos: np.ndarray) -> _GoalDistribution:
+  """Episode bookkeeping and a fixed pose, without loading any motion files."""
+  return _GoalDistribution(
+    source_file=Path("procedural"), clip="standing", frames=250,
+    strike_frame=100, fps=50.0,
+    position_mean=np.array([0.0, 0.0, 1.0]),
+    aligned_position_mean=np.array([0.0, 0.0, 1.0]),
+    position_std=np.zeros(3), velocity_mean=np.zeros(3),
+    velocity_std=np.zeros(3), orientation_rpy_mean=np.zeros(3),
+    orientation_rpy_std=np.zeros(3), sampling_weight=1.0,
+    initial_anchor_position_w=np.array([0.0, 0.0, 0.76]),
+    initial_anchor_quaternion_w=np.array([1.0, 0.0, 0.0, 0.0]),
+    initial_anchor_linear_velocity_w=np.zeros(3),
+    initial_anchor_angular_velocity_w=np.zeros(3),
+    initial_joint_position=default_joint_pos.copy(), initial_joint_velocity=np.zeros(ACTION_DIM),
+  )
 
 
 def _is_robot_half_singles_point(
@@ -1177,6 +1195,54 @@ class _RootDirectedIncomingBallPlanner:
     )
 
 
+class _ProceduralIncomingBallPlanner(_RootDirectedIncomingBallPlanner):
+  """Sample physical serves near G1, using no motion targets or motion matching."""
+
+  @torch.no_grad()
+  def sample(
+    self, pelvis_pos_w: np.ndarray, pelvis_rotation_w: np.ndarray
+  ) -> _IncomingBallPlan:
+    del pelvis_rotation_w
+    root = torch.tensor(pelvis_pos_w[:2], dtype=self.dtype, device=self.device)
+    aim_xy = root + torch.tensor(
+      [0.0, float(torch.empty(()).uniform_(-0.65, 0.65))],
+      dtype=self.dtype, device=self.device,
+    )
+    for attempt in range(3):
+      positions, velocities = sample_root_directed_tennis_launches_torch(
+        root[None].expand(32, -1), launch_position_min=self.position_min,
+        launch_position_max=self.position_max,
+        horizontal_speed_range_m_s=self.court.horizontal_speed_range_m_s,
+        horizontal_angle_half_width_deg=INCOMING_HORIZONTAL_ANGLE_HALF_WIDTH_DEG,
+        net_crossing_height_range_m=INCOMING_NET_CROSSING_HEIGHT_RANGE_M,
+        maximum_initial_speed_m_s=INCOMING_MAXIMUM_INITIAL_SPEED_M_S,
+        net_x_m=self.court.net_x_m,
+      )
+      trajectories = self._simulate_trajectories(positions, velocities)
+      p = trajectories.positions
+      distance = torch.linalg.vector_norm(p[..., :2] - aim_xy, dim=-1)
+      valid = (
+        (trajectories.bounce_counts == 1)
+        & trajectories.net_cleared[:, None]
+        & (p[..., 2] >= 0.65) & (p[..., 2] <= 1.25)
+        & (torch.linalg.vector_norm(p[..., :2] - root, dim=-1) <= 1.5)
+      )
+      score = (distance + 0.3 * (p[..., 2] - 0.95).abs()).masked_fill(~valid, torch.inf)
+      if not bool(torch.isfinite(score).any()):
+        continue
+      flat_index = int(score.argmin())
+      ball, tick = divmod(flat_index, score.shape[1])
+      return _IncomingBallPlan(
+        distribution=self.distributions[0],
+        launch_position_w=positions[ball].numpy().astype(np.float64),
+        launch_velocity_w=velocities[ball].numpy().astype(np.float64),
+        target_position_w=p[ball, tick].numpy().astype(np.float64),
+        contact_time_s=float(trajectories.times[tick]), match_distance_m=math.nan,
+        valid=True, attempts=(attempt + 1) * 32, motion_matched=False,
+      )
+    raise RuntimeError("No over-net, once-bounced incoming ball sampled near G1.")
+
+
 def _build_standalone_model(
   robot_xml: Path,
   physics_dt: float,
@@ -1456,9 +1522,19 @@ class _StandaloneStudentSimulation:
     if any(values.shape != (ACTION_DIM,) for values in metadata_arrays):
       raise ValueError("Student ONNX joint metadata fields must contain 29 values.")
 
-    robot_xml, self.goal_distributions = _load_goal_distributions(cfg.motion_config)
+    if cfg.motion_config is None:
+      if self.policy.observation_dim not in INTENT_OBSERVATION_DIMS:
+        raise ValueError("Reference-free playback requires an Intent Student model.")
+      robot_xml = REPO_ROOT / "robots/replay_unitree_description/mjcf/g1.xml"
+      self.goal_distributions = [_standing_initial_state(self.default_joint_pos)]
+    else:
+      robot_xml, self.goal_distributions = _load_goal_distributions(cfg.motion_config)
+    planner_type = (
+      _ProceduralIncomingBallPlanner if cfg.motion_config is None
+      else _RootDirectedIncomingBallPlanner
+    )
     self.incoming_ball_planner = (
-      _RootDirectedIncomingBallPlanner(
+      planner_type(
         self.goal_distributions, seed=cfg.seed, court=self.court
       )
       if self.policy.observation_dim in INTENT_OBSERVATION_DIMS
@@ -1959,8 +2035,9 @@ class _StandaloneStudentSimulation:
       )
       return
 
+    label = "MANUAL" if self.cfg.manual_mode else "PROCEDURAL"
     print(
-      f"[MANUAL INCOMING BALL] {context} motion_match=disabled "
+      f"[{label} INCOMING BALL] {context} motion_match=disabled "
       f"timing_constraint=disabled "
       f"p0={np.round(plan.launch_position_w, 3).tolist()} "
       f"v0={np.round(plan.launch_velocity_w, 3).tolist()} "
@@ -3085,10 +3162,12 @@ def run_student_onnx(cfg: StudentOnnxPlayConfig) -> None:
   if timing_plot is not None:
     timing_plot.reset(simulation)
 
+  print("[INFO]: Standalone MuJoCo + Student ONNX: no ROS or Teacher inference.")
   print(
-    "[INFO]: Standalone MuJoCo + Student ONNX: no ROS, Teacher inference, "
-    "ghost, phase command, or RSL-RL runner. Reference data supplies initial "
-    "states and incoming-ball sampling; the policy does not track a reference clip."
+    "[INFO]: Fixed standing initialization and procedural incoming balls; "
+    "no reference-motion files or motion matching."
+    if cfg.motion_config is None else
+    "[INFO]: Reference data supplies initial states and incoming-ball sampling."
   )
   print(
     f"[INFO]: ONNX providers={simulation.policy.providers} "
@@ -3101,7 +3180,8 @@ def run_student_onnx(cfg: StudentOnnxPlayConfig) -> None:
       f"net_x={simulation.court.net_x_m:.3f}m "
       f"net_width={2.0 * simulation.court.net_half_width_m:.3f}m, "
       "physical court XML, WarpRootDirected cache=0, Warp fused rollout, "
-      "200-motion match, nominal play physics"
+      f"{'procedural sampling' if cfg.motion_config is None else 'motion matching'}, "
+      "nominal play physics"
     )
     if simulation.policy.observation_dim == INTENT_ROBUST_OBSERVATION_DIM:
       print(

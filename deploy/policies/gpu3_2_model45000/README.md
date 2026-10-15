@@ -8,4 +8,4 @@
 - `params/` contains the saved training configurations as provenance, not launch configuration files. Their original machine paths are not used by the Quick Demo.
 - `manifest.json` records file checksums and the source checkpoint hash. The source `model_45000.pt` is not included in this directory; ONNX inference does not need it.
 
-Run the Quick Demo from the repository root using `uv run python scripts/demo_mujoco.py` after the environment and reference data setup in the main README.
+Run the Quick Demo from the repository root using `uv run python scripts/demo_mujoco.py` after the environment setup in the main README. No reference-motion dataset is required.

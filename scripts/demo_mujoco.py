@@ -22,21 +22,13 @@ def main() -> None:
     args = parser.parse_args()
     if args.headless and args.manual:
         parser.error("--manual requires a window")
-    data = root / "artifacts/rollout_1000epis_relabelled"
-    missing = [f"ep_{i:04d}{suffix}" for i in range(200) for suffix in (".npz", ".json") if not (data / f"ep_{i:04d}{suffix}").is_file()]
-    if missing:
-        parser.error(
-            f"Reference data missing under {data} (first missing file: {missing[0]}). "
-            "Download ep_0000 through ep_0199 (NPZ + JSON) from "
-            "https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K"
-        )
     policy = args.onnx_policy_file.expanduser().resolve()
     if not policy.is_file():
         parser.error(f"ONNX policy not found: {policy}")
     print(f"[DEMO POLICY] {policy}", flush=True)
     run_student_onnx(StudentOnnxPlayConfig(
         onnx_policy_file=policy,
-        motion_config=root / "athlete/src/athlete/motion_sets/motion_train_configs/rollout_1000epis_relabelled_first200_phase.toml",
+        motion_config=None,
         court_preset="small",
         landing_target_x=5.0,
         landing_target_y=0.0,
@@ -48,6 +40,8 @@ def main() -> None:
         realtime=not args.no_realtime,
         manual_mode=args.manual,
         manual_mouse_select=args.manual,
+        manual_launch_x=6.0,
+        manual_bounce_x=1.5,
     ))
 
 
