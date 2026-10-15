@@ -12,7 +12,6 @@ Training and deployment code for reactive whole-body tennis on the Unitree G1.
 ### Source motions
 
 - **G1-retargeted tennis strikes:** [164 NPZ clips and JSON annotations](data/djvkovic_npz_data_v5/) — 97 forehand, 67 backhand. Human motions are reconstructed from tennis videos using [GVHMR](https://github.com/zju3dv/GVHMR), then retargeted to the G1 using [GMR](https://github.com/YanjieZe/GMR). Included in this repository at `data/djvkovic_npz_data_v5/`.
-- **G1-retargeted LAFAN1 locomotion:** [download from Hugging Face](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset/tree/main/g1). Use the 16 `run*.csv` / `walk*.csv` files and convert them with `scripts/prepare_lafan_locomotion.py` into `data/lafan_npz_data/runandwalk/`. The upstream data are provided separately by their maintainers.
 
 Original dataset replay: three forehand and three backhand clips, shown at 1× speed. These are kinematic replays of the 164-clip source dataset, not mimic-policy rollouts.
 
@@ -21,6 +20,8 @@ Original dataset replay: three forehand and three backhand clips, shown at 1× s
 | [![Forehand replay](media/strike-replays/forehand.gif)](media/strike-replays/forehand.mp4) | [![Backhand replay](media/strike-replays/backhand.gif)](media/strike-replays/backhand.mp4) |
 
 [Forehand MP4](media/strike-replays/forehand.mp4) · [Backhand MP4](media/strike-replays/backhand.mp4)
+
+- **G1-retargeted LAFAN1 locomotion:** [download from Hugging Face](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset/tree/main/g1). Use the 16 `run*.csv` / `walk*.csv` files and convert them with `scripts/prepare_lafan_locomotion.py` into `data/lafan_npz_data/runandwalk/`. The upstream data are provided separately by their maintainers.
 
 ### Generated motions
 
