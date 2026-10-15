@@ -19,37 +19,20 @@
 
 ## 发布状态
 
-以下列表仅统计本仓库已公开的文件。TODO 项无法从全新克隆中获取，目前未提供发布日期或下载链接。
+### 已发布
 
-### 已开源／已发布
+- [x] **训练代码：**Teacher 训练、Student 蒸馏与 PPO 微调（`athlete/`）。
+- [x] **部署代码：**MuJoCo 仿真与 G1 实机部署（`deploy/`）。
+- [x] **TGMM：**动作数据库构建与“移动 + 击球”参考动作生成（`motion_matching/`）。
+- [x] **G1 重定向网球数据集：**164 个 NPZ 及 JSON 标注，正手 97 条、反手 67 条（`data/djvkovic_npz_data_v5/`）。
+- [x] **Student checkpoint 与 ONNX：**`model_36499.pt` 和 `model_36499.onnx`（`deploy/policies/m14_11/`）。
 
-- [x] **Teacher 训练代码：**`athlete/src/athlete/goal_cond_tracking/` 中的时间自适应参考动作跟踪。
-- [x] **Student 训练代码：**`athlete/` 中的 TPPO 蒸馏、PPO 微调和 Full-flight 任务配置。
-- [x] **仿真与评估代码：**`athlete/` 和 `scripts/` 中的本地／viser 回放、ONNX 回放与 checkpoint 评估脚本。
-- [x] **TGMM 代码：**`motion_matching/` 中的数据库构建、目标轨迹优化、运动匹配和运动学参考采集。
-- [x] **走跑数据转换脚本：**`scripts/prepare_lafan_locomotion.py`，将自行获取的 G1 LAFAN1 CSV 转为本地 NPZ。
-- [x] **击球数据：**`data/djvkovic_npz_data_v5/` 中的 164 个 NPZ 和 164 个 JSON 标注，正手 97 条、反手 67 条。
-- [x] **Teacher 模型：**`checkpoints/teacher_model_29999.pt`。
-- [x] **Student 模型与 ONNX：**`deploy/policies/m14_11/model_36499.pt` 和 `model_36499.onnx`，附训练参数、机器人资源和校验清单。
-- [x] **机器人资源：**`robots/` 中的 G1 与球拍模型及网格。
-- [x] **ROS 2 部署代码：**`deploy/` 中的 MuJoCo／G1 后端、动捕桥接、录制和回放；仍需安装外部依赖。
-- [x] **测试代码：**训练端与部署端的测试源文件。
+### TODO
 
-### TODO — 尚未发布
-
-- [ ] **Isaac Lab mimic 流程：**动作跟踪策略训练、动力学 rollout 采集和球目标重新标注；`mimic/` 包尚未公开。
-- [ ] **Mimic 模型：**动力学修正使用的历史 `model_49999.pt`。
-- [ ] **Teacher 参考数据集：**`rollout_1000epis` 的 1000 对 NPZ／JSON；文件和下载链接均未发布。
-- [ ] **Student 参考数据集：**`rollout_1000epis_relabelled` 的 1000 对 NPZ／JSON；文件和下载链接均未发布。
-- [ ] **Full-flight 策略模型：**任务代码已开源，训练后的模型尚未发布。
-- [ ] **视频到击球动作的重建流程：**用于生成已发布击球片段的源视频、重建和重定向脚本未包含在仓库中。
-- [ ] **Unitree SDK wrapper 配置：**`deploy/setup_jazzy_env.sh` 依赖 `submodules/unitree_sdk2_wrapper`，但仓库未包含该目录及其 submodule 注册；全新克隆缺少此依赖。
-
-### 外部数据 — 需自行获取
-
-- **16 条 G1 LAFAN1 走跑动作：**未随仓库分发。请从上游获取 run／walk CSV，再运行已开源的转换脚本，见[参考动作生成](#参考动作生成tgmm)。这些第三方动作不属于本仓库的待发布数据。
-
-**复现范围：**获取外部走跑数据后，可使用已开源的 TGMM 第 1、2 步。端到端参考生成及 Teacher／Student 重新训练仍依赖未发布的 mimic 流程和参考数据集；训练端 play 示例也需要参考数据，只有模型文件还不够。
+- [ ] **生成的参考数据集：**Teacher（`rollout_1000epis`）与 Student（`rollout_1000epis_relabelled`），各 1000 条动作。
+- [ ] **参考生成流程的其余部分：**视频重建／重定向、Isaac Lab mimic 代码及其 checkpoint。
+- [ ] **Full-flight 策略 checkpoint。**
+- [ ] **Unitree SDK wrapper 依赖配置。**
 
 ## 目录结构
 

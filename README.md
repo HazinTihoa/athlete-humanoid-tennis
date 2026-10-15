@@ -24,60 +24,20 @@ reference motions ──▶ teacher (phase + deadline) ──▶ student (DAgger
 
 ## Release status
 
-This checklist describes files published in this repository. TODO items are
-not available from a fresh clone; no release date or download link is provided.
-
 ### Published
 
-- [x] **Teacher training code:** phase-adaptive reference tracking in
-  `athlete/src/athlete/goal_cond_tracking/`.
-- [x] **Student training code:** TPPO distillation, PPO fine-tuning and
-  full-flight task configurations in `athlete/`.
-- [x] **Simulation and evaluation code:** native/viser playback, ONNX playback,
-  and checkpoint evaluation scripts in `athlete/` and `scripts/`.
-- [x] **TGMM code:** database construction, target-trajectory optimization,
-  motion matching and kinematic reference collection in `motion_matching/`.
-- [x] **Locomotion conversion script:** `scripts/prepare_lafan_locomotion.py`
-  converts separately obtained G1 LAFAN1 CSV files into local NPZ files.
-- [x] **Strike data:** 164 NPZ clips and 164 JSON annotations in
-  `data/djvkovic_npz_data_v5/` (97 forehand, 67 backhand).
-- [x] **Teacher checkpoint:** `checkpoints/teacher_model_29999.pt`.
-- [x] **Student checkpoint and ONNX model:**
-  `deploy/policies/m14_11/model_36499.pt` and `model_36499.onnx`, with saved
-  parameters, robot assets and a checksum manifest.
-- [x] **Robot assets:** G1 and racket models and meshes in `robots/`.
-- [x] **ROS 2 deployment code:** MuJoCo and G1 backends, motion-capture bridge,
-  recording and replay in `deploy/`; external dependencies are still required.
-- [x] **Tests:** training and deployment test source files.
+- [x] **Training code:** Teacher training, Student distillation and PPO fine-tuning (`athlete/`).
+- [x] **Deploy code:** MuJoCo simulation and G1 deployment (`deploy/`).
+- [x] **TGMM:** motion database construction and approach-and-strike reference generation (`motion_matching/`).
+- [x] **G1-retargeted tennis dataset:** 164 NPZ clips with JSON annotations — 97 forehand and 67 backhand (`data/djvkovic_npz_data_v5/`).
+- [x] **Student checkpoint and ONNX:** `model_36499.pt` and `model_36499.onnx` (`deploy/policies/m14_11/`).
 
-### TODO — not published
+### TODO
 
-- [ ] **Isaac Lab mimic pipeline:** tracking-policy training, physical rollout
-  collection and target relabelling code; the `mimic/` package is not published.
-- [ ] **Mimic checkpoint:** historical `model_49999.pt` used for physical correction.
-- [ ] **Teacher reference dataset:** 1,000 NPZ/JSON pairs in `rollout_1000epis`;
-  neither the files nor a download link are published.
-- [ ] **Student reference dataset:** 1,000 NPZ/JSON pairs in
-  `rollout_1000epis_relabelled`; neither the files nor a download link are published.
-- [ ] **Full-flight policy checkpoint:** task code is published, its trained
-  checkpoint is not.
-- [ ] **Video-to-strike reconstruction pipeline:** source videos and the scripts
-  used to reconstruct and retarget the released strike clips are not included.
-- [ ] **Unitree SDK wrapper setup:** `deploy/setup_jazzy_env.sh` expects
-  `submodules/unitree_sdk2_wrapper`, but that directory and its submodule
-  registration are not included; a fresh clone lacks this dependency.
-
-### External data — obtain separately
-
-- **16 G1 LAFAN1 locomotion clips:** not bundled. Obtain the upstream run/walk
-  CSV files and use the published conversion script; see
-  [Reference generation](#reference-generation-tgmm). These third-party motions
-  are not part of the repository's release checklist.
-
-**Reproduction scope:** TGMM stages 1–2 are published, subject to obtaining
-locomotion data. End-to-end reference generation and Teacher/Student retraining
-still require the unpublished mimic pipeline and reference datasets. Published
-checkpoints do not remove these data requirements from the training-side play task.
+- [ ] **Generated reference datasets:** Teacher (`rollout_1000epis`) and Student (`rollout_1000epis_relabelled`), 1,000 motions each.
+- [ ] **Remaining reference-generation pipeline:** video reconstruction/retargeting and Isaac Lab mimic code with its checkpoint.
+- [ ] **Full-flight policy checkpoint.**
+- [ ] **Unitree SDK wrapper dependency setup.**
 
 ## Repository layout
 
