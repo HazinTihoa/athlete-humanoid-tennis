@@ -24,7 +24,7 @@ Unitree G1 反应式全身网球策略的训练与部署代码。
 
 ### 生成动作数据
 
-- **Student 参考动作：**[Google Drive 下载](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing)。TGMM 生成的“移动 + 击球”动作经过 mimic policy rollout 后记录，并重新标注球目标。将 NPZ／JSON 文件直接放入 `artifacts/rollout_1000epis_relabelled/`。
+- **Teacher 参考动作：**[Google Drive 下载](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing)。用于 Teacher 训练的参考动作：由 TGMM 生成“移动 + 击球”动作，经过 mimic policy rollout 后记录，并重新标注球目标。将 NPZ／JSON 文件直接放入 `artifacts/rollout_1000epis_relabelled/`。
 
 ## 演示视频
 
@@ -82,13 +82,13 @@ uv run python scripts/demo_mujoco.py --headless --duration-s 20 --no-realtime
 - [x] **部署代码：**MuJoCo 仿真与 G1 实机部署（`deploy/`）。
 - [x] **TGMM：**数据库构建与运动学参考生成（`motion_matching/`）。
 - [x] **G1 重定向网球数据集：**164 个 NPZ 及 JSON 标注，正手 97 条、反手 67 条（`data/djvkovic_npz_data_v5/`）。
-- [x] **生成的 Student 参考数据：**经过 mimic policy rollout，并重新标注球目标 — [Google Drive 下载](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing)。
+- [x] **生成的 Teacher 参考数据：**经过 mimic policy rollout，并重新标注球目标 — [Google Drive 下载](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing)。
 - [x] **Student checkpoint 与 ONNX：**`model_36499.pt` 和 `model_36499.onnx`（`deploy/policies/m14_11/`）。
 - [x] **Quick Demo ONNX：**GPU3-2 Full-flight 的 `model_45000.onnx`、训练配置与校验值（`deploy/policies/gpu3_2_model45000/`）。未包含其源 `.pt` checkpoint。
 
 ### TODO
 
-- [ ] **生成的 Teacher 参考数据集：**`rollout_1000epis`，1000 条动作，保留原始规划球目标。
+- [ ] **原始球目标的 rollout 文件：**`rollout_1000epis`，1000 条动作，保留原始规划球目标；与上方已发布、重新标注球目标的 Teacher 参考数据不同。
 - [ ] **详细复现说明：**环境配置、数据准备、TGMM、训练、评估与部署。
 
 ## 致谢
