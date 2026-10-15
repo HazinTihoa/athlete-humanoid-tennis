@@ -6,6 +6,17 @@
 
 Unitree G1 反应式全身网球策略的训练与部署代码。
 
+## 数据下载
+
+### 原始动作数据
+
+- **G1 重定向网球击球动作：**[164 个 NPZ 及 JSON 标注](data/djvkovic_npz_data_v5/)，正手 97 条、反手 67 条。已包含在仓库的 `data/djvkovic_npz_data_v5/` 中。
+- **G1 重定向 LAFAN1 走跑动作：**[Hugging Face 下载](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset/tree/main/g1)。使用其中 16 个 `run*.csv`／`walk*.csv` 文件，经 `scripts/prepare_lafan_locomotion.py` 转换到 `data/lafan_npz_data/runandwalk/`。该上游数据由原维护者单独提供。
+
+### 生成动作数据
+
+- **Student 参考动作：**[Google Drive 下载](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing)。TGMM 生成的“移动 + 击球”动作经过 mimic policy rollout 后记录，并重新标注球目标。将 NPZ／JSON 文件直接放入 `artifacts/rollout_1000epis_relabelled/`。
+
 ## 1. 环境配置
 
 - **部署仿真：**Ubuntu 24.04、系统 Python 3.12、ROS 2 Jazzy 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。请先安装 [ROS 2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)，确保 `/opt/ros/jazzy/setup.bash` 存在。有窗口 Demo 需要桌面显示环境。

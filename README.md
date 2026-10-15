@@ -7,6 +7,17 @@
 
 Training and deployment code for reactive whole-body tennis on the Unitree G1.
 
+## Data downloads
+
+### Source motions
+
+- **G1-retargeted tennis strikes:** [164 NPZ clips and JSON annotations](data/djvkovic_npz_data_v5/) — 97 forehand, 67 backhand. Included in this repository at `data/djvkovic_npz_data_v5/`.
+- **G1-retargeted LAFAN1 locomotion:** [download from Hugging Face](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset/tree/main/g1). Use the 16 `run*.csv` / `walk*.csv` files and convert them with `scripts/prepare_lafan_locomotion.py` into `data/lafan_npz_data/runandwalk/`. The upstream data are provided separately by their maintainers.
+
+### Generated motions
+
+- **Student references:** [download from Google Drive](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing). TGMM-generated approach-and-strike motions recorded from mimic policy rollouts, with relabelled ball targets. Place the NPZ/JSON files directly under `artifacts/rollout_1000epis_relabelled/`.
+
 ## 1. Environment setup
 
 - **Deployment simulation:** Ubuntu 24.04, system Python 3.12, ROS 2 Jazzy and [uv](https://docs.astral.sh/uv/getting-started/installation/). Install [ROS 2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html) first; `/opt/ros/jazzy/setup.bash` must exist. The windowed demo needs a desktop display.
