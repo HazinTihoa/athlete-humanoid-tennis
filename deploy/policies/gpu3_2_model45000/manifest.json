@@ -1,0 +1,29 @@
+{
+  "policy": "GPU3-2 Full-flight with return-home-speed reward",
+  "checkpoint": "model_45000.pt",
+  "checkpoint_sha256": "fcb5c9529277eb424de4c68567fcf5b866ce2a00705030806905f2fccc16f885",
+  "checkpoint_included": false,
+  "observation_dim": 631,
+  "action_dim": 29,
+  "control_hz": 50,
+  "landing_target_startup_xy_m": [
+    5.0,
+    0.0
+  ],
+  "landing_target_observation_frame": "current_root",
+  "sweet_spot_velocity_mode": "relative_joint",
+  "files": {
+    "model_45000.onnx": {
+      "sha256": "bef7a094283f1a01383d1847279dc03de8d63a439274a42b88311127adc54361",
+      "size_bytes": 2421419
+    },
+    "params/agent.yaml": {
+      "sha256": "2e144c45b5b052ee564a527f839e9e670c238fb2b63c1bdbda65a81d1727b178",
+      "size_bytes": 3002
+    },
+    "params/env.yaml": {
+      "sha256": "74c95451e3838576d6f62872934d6029fe82169425cd17757e91fee993b37934",
+      "size_bytes": 624381
+    }
+  }
+}

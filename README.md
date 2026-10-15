@@ -37,42 +37,36 @@ Clips from the project page: the homepage rally and mouse-drag ball interaction 
 
 ## 1. Environment setup
 
-- **Deployment simulation:** Ubuntu 24.04, system Python 3.12, ROS 2 Jazzy and [uv](https://docs.astral.sh/uv/getting-started/installation/). Install [ROS 2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html) first; `/opt/ros/jazzy/setup.bash` must exist. The windowed demo needs a desktop display.
-- **Training:** a separate Python 3.13 environment and a CUDA 12.8-capable NVIDIA GPU. It does not use the deployment environment.
-
-Set up the simulation environment:
+The Quick Demo uses the same Python environment as training: Python 3.13.14 and the dependencies pinned in `uv.lock`. It does not require ROS 2, a Unitree SDK, or the separate real-robot deployment environment. Tested locally on Ubuntu 24.04 with an NVIDIA GPU; the windowed demo needs a desktop display. The ONNX policy runs on CPU; incoming-ball planning uses the training environment's Torch/Warp stack.
 
 ```bash
 git clone https://github.com/HazinTihoa/athlete-humanoid-tennis.git
 cd athlete-humanoid-tennis
-uv venv --no-project --python /usr/bin/python3 deploy/.venv
-uv pip install --python deploy/.venv/bin/python -r deploy/requirements-jazzy.txt
-```
-
-Run subsequent commands from this repository root. The simulation environment needs no Unitree hardware SDK and no reference-motion dataset.
-
-For training only, also install the locked project dependencies:
-
-```bash
-uv python install 3.13
+uv python install 3.13.14
+uv venv --python 3.13.14 .venv
 uv sync --frozen
 ```
 
-## 2. Quick demo: simulation deployment
+Run subsequent commands from the repository root. `uv run` automatically uses `.venv`; manual activation is not needed. Real-robot deployment is configured separately (see the deployment TODO below).
 
-Run the released Student ONNX policy in the MuJoCo ROS 2 simulator:
+## 2. Quick demo: MuJoCo without ROS
 
-```bash
-bash -c 'source /opt/ros/jazzy/setup.bash; bash deploy/run_tppo.sh sim g1_tppo_student_m14_11.yaml'
-```
-
-In the terminal, press **a** to enter home, wait at least 3 seconds, then press **x** to enable policy control. Balls are launched automatically. Press **b** to damp or **q** to quit. The policy is `deploy/policies/m14_11/model_36499.onnx` (631 observation values, 29 joint actions, 50 Hz).
-
-Without a desktop display, use this 8-second startup check; it launches the simulator in damp mode and exits automatically:
+1. Download the **Student references** from [Google Drive](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing). Place at least `ep_0000.npz` / `ep_0000.json` through `ep_0199.npz` / `ep_0199.json` directly under `artifacts/rollout_1000epis_relabelled/`, without an extra nested folder. These files supply initialization and incoming-ball sampling; LAFAN1 data and a Teacher checkpoint are not needed for this demo.
+2. Launch the demo:
 
 ```bash
-bash -c 'source /opt/ros/jazzy/setup.bash; bash deploy/run_tppo.sh sim g1_tppo_student_m14_11.yaml --headless --duration-s 8'
+uv run python scripts/demo_mujoco.py
 ```
+
+The included **GPU3-2 Full-flight + return-home-speed** model, `deploy/policies/gpu3_2_model45000/model_45000.onnx`, runs at 50 Hz with 631 observation values and 29 joint actions. The robot starts under policy control and balls launch automatically. The landing target is 5 m forward in the startup frame; the policy receives it in the current root frame and receives pelvis-relative racket velocity, matching this model's training configuration. Close the MuJoCo window to stop.
+
+For a 20-second headless simulation that also executes policy control:
+
+```bash
+uv run python scripts/demo_mujoco.py --headless --duration-s 20 --no-realtime
+```
+
+For manual feeding, run `uv run python scripts/demo_mujoco.py --manual`, then click a robot-side first-bounce point in the separate court plot. This mode selects a bounce point; it is not the mouse-drag interface shown in the project-page video. Use `--onnx-policy-file PATH` to explicitly select another compatible Student model.
 
 ## 3. Training workflow
 
@@ -92,6 +86,7 @@ bash -c 'source /opt/ros/jazzy/setup.bash; bash deploy/run_tppo.sh sim g1_tppo_s
 - [x] **G1-retargeted tennis dataset:** 164 NPZ clips with JSON annotations — 97 forehand and 67 backhand (`data/djvkovic_npz_data_v5/`).
 - [x] **Generated Student reference dataset:** mimic policy rollouts with relabelled ball targets — [Google Drive](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing).
 - [x] **Student checkpoint and ONNX:** `model_36499.pt` and `model_36499.onnx` (`deploy/policies/m14_11/`).
+- [x] **Quick Demo ONNX:** GPU3-2 Full-flight `model_45000.onnx`, saved training configurations and checksums (`deploy/policies/gpu3_2_model45000/`). Its source `.pt` checkpoint is not included.
 
 ### TODO
 

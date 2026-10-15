@@ -36,42 +36,36 @@ Unitree G1 反应式全身网球策略的训练与部署代码。
 
 ## 1. 环境配置
 
-- **部署仿真：**Ubuntu 24.04、系统 Python 3.12、ROS 2 Jazzy 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。请先安装 [ROS 2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)，确保 `/opt/ros/jazzy/setup.bash` 存在。有窗口 Demo 需要桌面显示环境。
-- **训练：**独立的 Python 3.13 环境，以及支持 CUDA 12.8 的 NVIDIA GPU；不使用部署环境。
-
-配置仿真环境：
+Quick Demo 与训练共用 Python 环境：Python 3.13.14，以及 `uv.lock` 锁定的依赖。**不需要 ROS 2、Unitree SDK 或独立的实机部署环境。**已在 Ubuntu 24.04、NVIDIA GPU 的本地机器验证；有窗口模式需要桌面显示。ONNX 策略使用 CPU 推理，来球规划使用训练环境中的 Torch／Warp。
 
 ```bash
 git clone https://github.com/HazinTihoa/athlete-humanoid-tennis.git
 cd athlete-humanoid-tennis
-uv venv --no-project --python /usr/bin/python3 deploy/.venv
-uv pip install --python deploy/.venv/bin/python -r deploy/requirements-jazzy.txt
-```
-
-后续命令均在仓库根目录执行。纯仿真不需要 Unitree 硬件 SDK，也不需要参考动作数据集。
-
-仅进行训练时，额外安装锁定的项目依赖：
-
-```bash
-uv python install 3.13
+uv python install 3.13.14
+uv venv --python 3.13.14 .venv
 uv sync --frozen
 ```
 
-## 2. 快速 Demo：仿真部署
+后续命令均在仓库根目录执行。`uv run` 自动使用 `.venv`，无需手动激活。实机部署环境另外配置，见下方部署 TODO。
 
-在 MuJoCo ROS 2 仿真器中运行已发布的 Student ONNX 策略：
+## 2. 快速 Demo：无 ROS 的 MuJoCo 仿真
 
-```bash
-bash -c 'source /opt/ros/jazzy/setup.bash; bash deploy/run_tppo.sh sim g1_tppo_student_m14_11.yaml'
-```
-
-在终端按 **a** 进入 home，等待至少 3 秒，再按 **x** 开启策略控制；仿真会自动发球。按 **b** 阻尼，按 **q** 退出。使用的模型为 `deploy/policies/m14_11/model_36499.onnx`，观测维度 631、关节动作维度 29、控制频率 50 Hz。
-
-没有桌面显示时，可运行以下 8 秒启动检查；仿真保持阻尼状态，到时自动退出：
+1. 从 [Google Drive](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing) 下载 **Student 参考数据**。至少将 `ep_0000.npz`／`ep_0000.json` 至 `ep_0199.npz`／`ep_0199.json` 直接放入 `artifacts/rollout_1000epis_relabelled/`，不要额外嵌套一层目录。这些数据用于初始化和来球采样；此 Demo 不需要 LAFAN1 数据或 Teacher checkpoint。
+2. 启动 Demo：
 
 ```bash
-bash -c 'source /opt/ros/jazzy/setup.bash; bash deploy/run_tppo.sh sim g1_tppo_student_m14_11.yaml --headless --duration-s 8'
+uv run python scripts/demo_mujoco.py
 ```
+
+默认使用仓库包含的 **GPU3-2 Full-flight + 回位速度奖励**模型 `deploy/policies/gpu3_2_model45000/model_45000.onnx`，观测维度 631、关节动作维度 29、控制频率 50 Hz。启动后直接开启策略控制并自动发球。目标落点位于启动坐标系前方 5 米；策略接收当前机器人坐标系下的目标以及相对骨盆的球拍速度，与该模型训练配置一致。关闭 MuJoCo 窗口即可退出。
+
+无窗口运行 20 秒仿真，实际执行策略控制：
+
+```bash
+uv run python scripts/demo_mujoco.py --headless --duration-s 20 --no-realtime
+```
+
+手动发球可运行 `uv run python scripts/demo_mujoco.py --manual`，在单独的球场图中点击机器人一侧的一次落点。这是点击落点模式，与项目网页视频中的鼠标拖球界面不同。使用 `--onnx-policy-file PATH` 可明确指定另一份兼容的 Student 模型。
 
 ## 3. 训练流程
 
@@ -91,6 +85,7 @@ bash -c 'source /opt/ros/jazzy/setup.bash; bash deploy/run_tppo.sh sim g1_tppo_s
 - [x] **G1 重定向网球数据集：**164 个 NPZ 及 JSON 标注，正手 97 条、反手 67 条（`data/djvkovic_npz_data_v5/`）。
 - [x] **生成的 Student 参考数据：**经过 mimic policy rollout，并重新标注球目标 — [Google Drive 下载](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing)。
 - [x] **Student checkpoint 与 ONNX：**`model_36499.pt` 和 `model_36499.onnx`（`deploy/policies/m14_11/`）。
+- [x] **Quick Demo ONNX：**GPU3-2 Full-flight 的 `model_45000.onnx`、训练配置与校验值（`deploy/policies/gpu3_2_model45000/`）。未包含其源 `.pt` checkpoint。
 
 ### TODO
 

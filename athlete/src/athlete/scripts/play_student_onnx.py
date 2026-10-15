@@ -216,6 +216,8 @@ class StudentOnnxPlayConfig:
   timing_plot_fps: float = 5.0
   render_fps: float = 30.0
   realtime: bool = True
+  headless: bool = False
+  duration_s: float | None = None
   landing_target_x: float | None = None
   landing_target_y: float | None = None
   landing_target_std_x: float = 0.0
@@ -225,6 +227,8 @@ class StudentOnnxPlayConfig:
   show_landing_target: bool = True
   show_sweet_point: bool = True
   sweet_spot_state_source: Literal["simulation", "fk"] = "simulation"
+  sweet_spot_velocity_mode: Literal["absolute", "relative_joint"] = "absolute"
+  landing_target_observation_frame: Literal["startup", "current_root"] = "startup"
   """Use fk for policies trained on deployment-style position differences."""
   sweet_spot_velocity_smoothing: float = 0.35
   continuous_strikes: bool = True
@@ -2327,6 +2331,22 @@ class _StandaloneStudentSimulation:
       sweet_spot_position_b = pelvis_rotation.T @ (position_w - pelvis_pos)
       sweet_spot_velocity_b = pelvis_rotation.T @ velocity_w
 
+    if self.cfg.sweet_spot_velocity_mode == "relative_joint":
+      # Match training: remove the pelvis translation and angular transport.
+      # Only articulated joint DOFs contribute to motion relative to the pelvis.
+      jacobian = np.zeros((3, self.model.nv))
+      mujoco.mj_jacSite(
+        self.model, self.data, jacobian, None, self.sweet_spot_site_id
+      )
+      sweet_spot_velocity_b = pelvis_rotation.T @ (
+        jacobian[:, self.joint_dof_adr] @ self.data.qvel[self.joint_dof_adr]
+      )
+    landing_target = self.landing_target_position_startup[:2]
+    if self.cfg.landing_target_observation_frame == "current_root":
+      landing_target = (
+        pelvis_rotation.T @ (self.landing_target_position_w - pelvis_pos)
+      )[:2]
+
     # Preserve the ObservationManager insertion order of the 133-D Student group.
     current_student = np.concatenate(
       [
@@ -2334,7 +2354,7 @@ class _StandaloneStudentSimulation:
         joint_pos_rel,
         joint_vel_rel,
         self.last_action,
-        self.landing_target_position_startup[:2],
+        landing_target,
         ball_position_history_b,
         ball_velocity_history_b,
         sweet_spot_velocity_b,
@@ -3020,6 +3040,14 @@ class _ViewerStatusOverlay:
 
 
 def run_student_onnx(cfg: StudentOnnxPlayConfig) -> None:
+  if cfg.duration_s is not None and (
+    not math.isfinite(cfg.duration_s) or cfg.duration_s <= 0.0
+  ):
+    raise ValueError("duration_s must be finite and greater than zero.")
+  if cfg.headless and cfg.duration_s is None:
+    raise ValueError("Headless playback requires duration_s.")
+  if cfg.headless and (cfg.timing_plot or cfg.manual_mouse_select):
+    raise ValueError("Headless playback cannot open interactive plots.")
   if cfg.render_fps <= 0.0:
     raise ValueError("render_fps must be greater than zero.")
   if cfg.timing_plot and cfg.timing_plot_fps <= 0.0:
@@ -3058,8 +3086,9 @@ def run_student_onnx(cfg: StudentOnnxPlayConfig) -> None:
     timing_plot.reset(simulation)
 
   print(
-    "[INFO]: Standalone deployment simulation: no task registry, Teacher, "
-    "reference motion, ghost, phase command, or RSL-RL runner"
+    "[INFO]: Standalone MuJoCo + Student ONNX: no ROS, Teacher inference, "
+    "ghost, phase command, or RSL-RL runner. Reference data supplies initial "
+    "states and incoming-ball sampling; the policy does not track a reference clip."
   )
   print(
     f"[INFO]: ONNX providers={simulation.policy.providers} "
@@ -3118,6 +3147,36 @@ def run_student_onnx(cfg: StudentOnnxPlayConfig) -> None:
         "over-net failure threshold="
         f"{cfg.failure_trajectory_xy_distance_threshold_m:.3f}m"
       )
+  if cfg.headless:
+    steps = 0
+    hits = 0
+    cycles = 0
+    hit_counted = False
+    started = time.perf_counter()
+    while steps * cfg.control_dt < cfg.duration_s:
+      report = simulation.step()
+      steps += 1
+      if not np.isfinite(simulation.data.qpos).all() or not np.isfinite(simulation.data.qvel).all():
+        raise RuntimeError("Non-finite simulation state.")
+      if report.actual_hit_time_s is not None and not hit_counted:
+        hits += 1
+        hit_counted = True
+      if report.episode_complete:
+        cycles += 1
+        if intent_mode and cfg.continuous_strikes:
+          simulation.start_next_strike_cycle()
+        else:
+          simulation.reset()
+        hit_counted = False
+      if cfg.realtime:
+        time.sleep(max(0.0, started + steps * cfg.control_dt - time.perf_counter()))
+    print(
+      f"[DEMO COMPLETE] simulated={steps * cfg.control_dt:.2f}s "
+      f"steps={steps} completed_cycles={cycles} racket_contacts={hits} "
+      f"wall_time={time.perf_counter() - started:.2f}s"
+    )
+    return
+
   with mujoco.viewer.launch_passive(
     simulation.model,
     simulation.data,
@@ -3149,9 +3208,12 @@ def run_student_onnx(cfg: StudentOnnxPlayConfig) -> None:
     last_tick = time.perf_counter()
     next_render = last_tick
     sim_budget = cfg.control_dt
+    total_steps = 0
 
     try:
       while viewer.is_running():
+        if cfg.duration_s is not None and total_steps * cfg.control_dt >= cfg.duration_s:
+          break
         if manual_selector is not None:
           manual_selector.poll()
           if not manual_selector.is_open:
@@ -3188,6 +3250,7 @@ def run_student_onnx(cfg: StudentOnnxPlayConfig) -> None:
         steps_this_tick = 0
         while sim_budget + 1.0e-12 >= cfg.control_dt and steps_this_tick < 8:
           report = simulation.step()
+          total_steps += 1
           status_overlay.record_step()
           if timing_plot is not None and not waiting_for_manual_selection:
             timing_plot.update(report)
