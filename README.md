@@ -35,7 +35,7 @@ Original dataset replay: three forehand and three backhand clips, shown at 1× s
 
 ## 1. Environment setup
 
-The Quick Demo uses the same Python environment as training: Python 3.13.14 and the dependencies pinned in `uv.lock`. It does not require ROS 2, a Unitree SDK, or the separate real-robot deployment environment. Tested locally on Ubuntu 24.04 with an NVIDIA GPU; the windowed demo needs a desktop display. The ONNX policy runs on CPU; incoming-ball planning uses the training environment's Torch/Warp stack.
+Requirements: Ubuntu 24.04, [uv](https://docs.astral.sh/uv/getting-started/installation/) and Python 3.13.14. Training requires an NVIDIA GPU compatible with CUDA 12.8.
 
 ```bash
 git clone https://github.com/HazinTihoa/athlete-humanoid-tennis.git
@@ -45,25 +45,29 @@ uv venv --python 3.13.14 .venv
 uv sync --frozen
 ```
 
-Run subsequent commands from the repository root. `uv run` automatically uses `.venv`; manual activation is not needed. Real-robot deployment is configured separately (see the deployment TODO below).
+Run the following commands from the repository root.
 
 ### Quick demo: MuJoCo without ROS
 
-The ONNX model and robot assets are included. No reference-motion download, LAFAN1 dataset, or Teacher checkpoint is needed. G1 starts from a fixed standing pose, and physical incoming balls are sampled near the robot without motion matching.
+No additional model or dataset download is needed.
+
+Automatic ball feeding:
 
 ```bash
 uv run python scripts/demo_mujoco.py
 ```
 
-The included **GPU3-2 Full-flight + return-home-speed** model, `deploy/policies/gpu3_2_model45000/model_45000.onnx`, runs at 50 Hz with 631 observation values and 29 joint actions. The robot starts under policy control and balls launch automatically. The landing target is 5 m forward in the startup frame; the policy receives it in the current root frame and receives pelvis-relative racket velocity, matching this model's training configuration. Close the MuJoCo window to stop.
+Manual feeding — click a robot-side bounce point in the court plot:
 
-For a 20-second headless simulation that also executes policy control:
+```bash
+uv run python scripts/demo_mujoco.py --manual
+```
+
+Headless, 20 simulated seconds:
 
 ```bash
 uv run python scripts/demo_mujoco.py --headless --duration-s 20 --no-realtime
 ```
-
-For manual feeding, run `uv run python scripts/demo_mujoco.py --manual`, then click a robot-side first-bounce point in the separate court plot. This mode selects a bounce point; it is not the mouse-drag interface shown in the project-page video. Use `--onnx-policy-file PATH` to explicitly select another compatible Student model.
 
 ## 2. Training workflow
 
