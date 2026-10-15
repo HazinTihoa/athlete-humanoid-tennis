@@ -58,43 +58,11 @@ bash -c 'source /opt/ros/jazzy/setup.bash; bash deploy/run_tppo.sh sim g1_tppo_s
 
 ## 3. 训练流程
 
-1. **生成参考动作：**用 `motion_matching/` 构建 TGMM 数据库并采集运动学“移动 + 击球”动作。仓库包含 164 条击球动作；16 条 G1 LAFAN1 走跑动作需另行获取，并用 `scripts/prepare_lafan_locomotion.py` 转换。动力学修正后得到 Teacher／Student 参考数据。
-2. **训练 Teacher：**通过时间自适应跟踪学习生成的参考动作。
-3. **训练 Student：**通过在线 DAgger 从 Teacher 蒸馏，再用 PPO 微调；后续可使用 Full-flight 任务配置进行落点奖励微调。
-
-**参考数据：**
-
-- **Student — [Google Drive 下载](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing)：**`rollout_1000epis_relabelled` 是生成的“移动 + 击球”动作经 mimic policy 在物理仿真中 rollout 后记录的数据，并重新标注了球目标。将 NPZ／JSON 文件直接放入 `artifacts/rollout_1000epis_relabelled/`。下方 Student 命令使用其中的 `ep_0000`–`ep_0199`，以及仓库提供的冻结 Teacher 模型。
-- **Teacher — 尚未发布：**重新训练 Teacher 需要 `artifacts/rollout_1000epis/` 中 `ep_0000`–`ep_0199` 的 NPZ／JSON，保留原始规划球目标。Student 数据的重新标注目标不能替代 Teacher 的原始标签。
-
-TOML 只配置数据路径，不包含动作数据。上方仿真 Demo 不需要这两套数据。
-
-Teacher：
-
-```bash
-uv run train Mjlab-PhaseAccel-DeadlineProjection-MultiTarget-Tracking-Flat-Unitree-G1-Root-Pos-Obs \
-  --motion-config athlete/src/athlete/motion_sets/motion_train_configs/rollout_1000epis_first200_phase.toml \
-  --env.scene.num-envs 8192 --agent.max-iterations 30000 \
-  --agent.logger tensorboard --gpu-ids "[0]"
-```
-
-Student（使用仓库提供的冻结 Teacher 模型）：
-
-```bash
-uv run train Mjlab-Tennis-SmallCourt-IntentRefLatent-PPOPlusDistill005-GlobalRoot-RelativeSweet-BallDelay-RootLanding-Unitree-G1 \
-  --motion-config athlete/src/athlete/motion_sets/motion_train_configs/rollout_1000epis_relabelled_first200_phase.toml \
-  --agent.algorithm.teacher-checkpoint checkpoints/teacher_model_29999.pt \
-  --env.scene.num-envs 8192 --env.scene.terrain.num-envs 8192 \
-  --agent.logger tensorboard --gpu-ids "[0]"
-```
-
-上方命令使用 8192 个并行环境；显存不足时需降低环境数量。日志与 checkpoint 保存在 `logs/rsl_rl/`。快速 Demo 不需要运行训练。
+- [ ] TODO：补充训练说明。
 
 ## 4. 部署流程
 
-- **仿真部署：**使用已发布的 ONNX 和 `deploy/configs/g1_tppo_student_m14_11.yaml`，按上方快速 Demo 运行。导出新模型前，可用 `uv run python scripts/export_intent_checkpoint.py --help` 查看参数。
-- **G1 实机：**同一策略／控制配置切换为硬件后端，机器人与球的状态由外部动捕提供。需要 ROS 2 Jazzy、Unitree SDK wrapper、已配置的机器人网络和 NatNet 桥接。仓库未包含 SDK wrapper，全新克隆尚不能直接完成硬件部署。
-- **录制：**在仿真命令末尾加 `--record`，另外需要支持 MCAP 的 ROS 2 rosbag2；输出目录为 `deploy/recordings/`。
+- [ ] TODO：补充部署说明。
 
 ## 发布状态
 

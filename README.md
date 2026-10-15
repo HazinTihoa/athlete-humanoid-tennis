@@ -59,43 +59,11 @@ bash -c 'source /opt/ros/jazzy/setup.bash; bash deploy/run_tppo.sh sim g1_tppo_s
 
 ## 3. Training workflow
 
-1. **Generate references:** use `motion_matching/` to build the TGMM database and collect kinematic approach-and-strike motions. The 164 strike clips are included; the 16 G1 LAFAN1 run/walk clips must be obtained separately and converted using `scripts/prepare_lafan_locomotion.py`. Physical correction produces the Teacher and Student reference datasets.
-2. **Train the Teacher:** phase-adaptive tracking of the generated references.
-3. **Train the Student:** online DAgger distillation from the Teacher, followed by PPO fine-tuning. Full-flight task configurations support subsequent landing-based fine-tuning.
-
-**Reference data:**
-
-- **Student — [download from Google Drive](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing):** `rollout_1000epis_relabelled` contains generated approach-and-strike motions recorded from mimic policy rollouts in physics simulation, with relabelled ball targets. Place the NPZ/JSON files directly under `artifacts/rollout_1000epis_relabelled/`. The Student command below uses `ep_0000`–`ep_0199` and the included frozen Teacher checkpoint.
-- **Teacher — not yet published:** Teacher retraining requires NPZ/JSON pairs `ep_0000`–`ep_0199` under `artifacts/rollout_1000epis/` with the original planned targets. The relabelled Student dataset does not replace these Teacher labels.
-
-TOML files specify dataset paths; they do not contain motion data. The simulation demo above requires neither dataset.
-
-Teacher:
-
-```bash
-uv run train Mjlab-PhaseAccel-DeadlineProjection-MultiTarget-Tracking-Flat-Unitree-G1-Root-Pos-Obs \
-  --motion-config athlete/src/athlete/motion_sets/motion_train_configs/rollout_1000epis_first200_phase.toml \
-  --env.scene.num-envs 8192 --agent.max-iterations 30000 \
-  --agent.logger tensorboard --gpu-ids "[0]"
-```
-
-Student (uses the included frozen Teacher checkpoint):
-
-```bash
-uv run train Mjlab-Tennis-SmallCourt-IntentRefLatent-PPOPlusDistill005-GlobalRoot-RelativeSweet-BallDelay-RootLanding-Unitree-G1 \
-  --motion-config athlete/src/athlete/motion_sets/motion_train_configs/rollout_1000epis_relabelled_first200_phase.toml \
-  --agent.algorithm.teacher-checkpoint checkpoints/teacher_model_29999.pt \
-  --env.scene.num-envs 8192 --env.scene.terrain.num-envs 8192 \
-  --agent.logger tensorboard --gpu-ids "[0]"
-```
-
-The commands above use 8,192 parallel environments; reduce the environment counts to fit GPU memory. Logs and checkpoints are written under `logs/rsl_rl/`. Full training is not part of the quick demo.
+- [ ] TODO: training instructions.
 
 ## 4. Deployment workflow
 
-- **Simulation:** use the released ONNX model and `deploy/configs/g1_tppo_student_m14_11.yaml` with the quick demo above. To export a new checkpoint, inspect the supported arguments with `uv run python scripts/export_intent_checkpoint.py --help`.
-- **Real G1:** the same policy/control configuration uses the hardware backend and external motion capture for robot and ball state. ROS 2 Jazzy, the Unitree SDK wrapper, a configured robot network and the NatNet bridge are required. The SDK wrapper is not bundled, so hardware setup is not complete from a fresh clone.
-- **Recording:** add `--record` to the simulation command; this additionally requires ROS 2 rosbag2 with MCAP support. Recordings are saved under `deploy/recordings/`.
+- [ ] TODO: deployment instructions.
 
 ## Release status
 
