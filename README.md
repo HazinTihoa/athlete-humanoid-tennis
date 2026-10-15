@@ -52,7 +52,12 @@ bash -c 'source /opt/ros/jazzy/setup.bash; bash deploy/run_tppo.sh sim g1_tppo_s
 2. **Train the Teacher:** phase-adaptive tracking of the generated references.
 3. **Train the Student:** online DAgger distillation from the Teacher, followed by PPO fine-tuning. Full-flight task configurations support subsequent landing-based fine-tuning.
 
-**Data prerequisite:** the two generated reference datasets are not published. Before running the training commands, supply NPZ/JSON pairs `ep_0000`–`ep_0199` under `artifacts/rollout_1000epis/` (Teacher) and `artifacts/rollout_1000epis_relabelled/` (Student). TOML files specify their paths; they do not include the data. A fresh clone supports the simulation demo above, but cannot reproduce training until these data are supplied.
+**Reference data:**
+
+- **Student — [download from Google Drive](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing):** `rollout_1000epis_relabelled` contains generated approach-and-strike motions recorded from mimic policy rollouts in physics simulation, with relabelled ball targets. Place the NPZ/JSON files directly under `artifacts/rollout_1000epis_relabelled/`. The Student command below uses `ep_0000`–`ep_0199` and the included frozen Teacher checkpoint.
+- **Teacher — not yet published:** Teacher retraining requires NPZ/JSON pairs `ep_0000`–`ep_0199` under `artifacts/rollout_1000epis/` with the original planned targets. The relabelled Student dataset does not replace these Teacher labels.
+
+TOML files specify dataset paths; they do not contain motion data. The simulation demo above requires neither dataset.
 
 Teacher:
 
@@ -89,11 +94,12 @@ The commands above use 8,192 parallel environments; reduce the environment count
 - [x] **Deploy code:** MuJoCo simulation and G1 deployment (`deploy/`).
 - [x] **TGMM:** database construction and kinematic reference generation (`motion_matching/`).
 - [x] **G1-retargeted tennis dataset:** 164 NPZ clips with JSON annotations — 97 forehand and 67 backhand (`data/djvkovic_npz_data_v5/`).
+- [x] **Generated Student reference dataset:** mimic policy rollouts with relabelled ball targets — [Google Drive](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing).
 - [x] **Student checkpoint and ONNX:** `model_36499.pt` and `model_36499.onnx` (`deploy/policies/m14_11/`).
 
 ### TODO
 
-- [ ] **Generated reference datasets:** Teacher (`rollout_1000epis`) and Student (`rollout_1000epis_relabelled`), 1,000 motions each.
+- [ ] **Generated Teacher reference dataset:** `rollout_1000epis`, 1,000 motions with the original planned targets.
 - [ ] **Detailed reproduction guide:** environment setup, data preparation, TGMM, training, evaluation and deployment.
 
 ## Acknowledgements

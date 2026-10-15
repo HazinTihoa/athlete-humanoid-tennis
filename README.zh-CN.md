@@ -51,7 +51,12 @@ bash -c 'source /opt/ros/jazzy/setup.bash; bash deploy/run_tppo.sh sim g1_tppo_s
 2. **训练 Teacher：**通过时间自适应跟踪学习生成的参考动作。
 3. **训练 Student：**通过在线 DAgger 从 Teacher 蒸馏，再用 PPO 微调；后续可使用 Full-flight 任务配置进行落点奖励微调。
 
-**数据前提：**两套生成的参考数据尚未发布。执行下方训练命令前，需将 `ep_0000`–`ep_0199` 的 NPZ／JSON 文件分别放入 `artifacts/rollout_1000epis/`（Teacher）和 `artifacts/rollout_1000epis_relabelled/`（Student）。TOML 只配置路径，不包含数据。全新克隆可以运行上方仿真 Demo，但补齐数据前无法复现训练。
+**参考数据：**
+
+- **Student — [Google Drive 下载](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing)：**`rollout_1000epis_relabelled` 是生成的“移动 + 击球”动作经 mimic policy 在物理仿真中 rollout 后记录的数据，并重新标注了球目标。将 NPZ／JSON 文件直接放入 `artifacts/rollout_1000epis_relabelled/`。下方 Student 命令使用其中的 `ep_0000`–`ep_0199`，以及仓库提供的冻结 Teacher 模型。
+- **Teacher — 尚未发布：**重新训练 Teacher 需要 `artifacts/rollout_1000epis/` 中 `ep_0000`–`ep_0199` 的 NPZ／JSON，保留原始规划球目标。Student 数据的重新标注目标不能替代 Teacher 的原始标签。
+
+TOML 只配置数据路径，不包含动作数据。上方仿真 Demo 不需要这两套数据。
 
 Teacher：
 
@@ -88,11 +93,12 @@ uv run train Mjlab-Tennis-SmallCourt-IntentRefLatent-PPOPlusDistill005-GlobalRoo
 - [x] **部署代码：**MuJoCo 仿真与 G1 实机部署（`deploy/`）。
 - [x] **TGMM：**数据库构建与运动学参考生成（`motion_matching/`）。
 - [x] **G1 重定向网球数据集：**164 个 NPZ 及 JSON 标注，正手 97 条、反手 67 条（`data/djvkovic_npz_data_v5/`）。
+- [x] **生成的 Student 参考数据：**经过 mimic policy rollout，并重新标注球目标 — [Google Drive 下载](https://drive.google.com/drive/folders/1CWTzU1l1Bo3vszM7OkWS0bBAl8Cbif2K?usp=sharing)。
 - [x] **Student checkpoint 与 ONNX：**`model_36499.pt` 和 `model_36499.onnx`（`deploy/policies/m14_11/`）。
 
 ### TODO
 
-- [ ] **生成的参考数据集：**Teacher（`rollout_1000epis`）与 Student（`rollout_1000epis_relabelled`），各 1000 条动作。
+- [ ] **生成的 Teacher 参考数据集：**`rollout_1000epis`，1000 条动作，保留原始规划球目标。
 - [ ] **详细复现说明：**环境配置、数据准备、TGMM、训练、评估与部署。
 
 ## 致谢
