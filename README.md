@@ -11,7 +11,7 @@ Training and deployment code for reactive whole-body tennis on the Unitree G1.
 
 ### Source motions
 
-- **G1-retargeted tennis strikes:** [164 NPZ clips and JSON annotations](data/djvkovic_npz_data_v5/) — 97 forehand, 67 backhand. Included in this repository at `data/djvkovic_npz_data_v5/`.
+- **G1-retargeted tennis strikes:** [164 NPZ clips and JSON annotations](data/djvkovic_npz_data_v5/) — 97 forehand, 67 backhand. Human motions are reconstructed from tennis videos using [GVHMR](https://github.com/zju3dv/GVHMR), then retargeted to the G1 using [GMR](https://github.com/YanjieZe/GMR). Included in this repository at `data/djvkovic_npz_data_v5/`.
 - **G1-retargeted LAFAN1 locomotion:** [download from Hugging Face](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset/tree/main/g1). Use the 16 `run*.csv` / `walk*.csv` files and convert them with `scripts/prepare_lafan_locomotion.py` into `data/lafan_npz_data/runandwalk/`. The upstream data are provided separately by their maintainers.
 
 ### Generated motions
@@ -116,6 +116,9 @@ The commands above use 8,192 parallel environments; reduce the environment count
 ## Acknowledgements
 
 We thank the authors of the following projects:
+
+- [GVHMR](https://github.com/zju3dv/GVHMR): human motion reconstruction from the source tennis videos
+- [GMR](https://github.com/YanjieZe/GMR): retargeting the reconstructed human motions to the Unitree G1
 
 - [TaskNPoint](https://github.com/wernerb43/tasknpoint): goal-conditioned motion-tracking foundation of this code base
 - [mjlab](https://github.com/mujocolab/mjlab): GPU-accelerated MuJoCo simulation and RL environment framework
