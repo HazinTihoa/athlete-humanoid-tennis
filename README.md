@@ -39,6 +39,8 @@ Using the same training pipeline, we also trained the G1 to play badminton in si
 
 [![Humanoid badminton in simulation](media/badminton/badminton-sim-preview.gif)](media/badminton/badminton-sim.mp4)
 
+[Watch the full badminton simulation test (30 s)](https://hazintihoa.github.io/ATHLETE/#badminton)
+
 ## 1. Environment setup
 
 Requirements: Ubuntu 24.04, [uv](https://docs.astral.sh/uv/getting-started/installation/) and Python 3.13.14. Training requires an NVIDIA GPU compatible with CUDA 12.8.

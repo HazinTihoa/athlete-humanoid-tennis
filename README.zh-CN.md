@@ -38,6 +38,8 @@ Unitree G1 反应式全身网球策略的训练与部署代码。
 
 [![人形机器人羽毛球仿真](media/badminton/badminton-sim-preview.gif)](media/badminton/badminton-sim.mp4)
 
+[观看完整羽毛球仿真测试视频（30 秒）](https://hazintihoa.github.io/ATHLETE/#badminton)
+
 ## 1. 环境配置
 
 环境要求：Ubuntu 24.04、[uv](https://docs.astral.sh/uv/getting-started/installation/) 和 Python 3.13.14。训练需要兼容 CUDA 12.8 的 NVIDIA GPU。
