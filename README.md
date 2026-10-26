@@ -33,6 +33,12 @@ Original dataset replay: three forehand and three backhand clips, shown at 1× s
 | --- | --- |
 | [![Real-world rally](media/project-demos/real-rally.gif)](https://hazintihoa.github.io/ATHLETE/assets/video/hero-7strikes-1080.mp4) | [![Mouse-drag ball interaction in simulation](media/project-demos/simulation-drag.gif)](https://hazintihoa.github.io/ATHLETE/assets/video/sim-rally1.mp4) |
 
+### Humanoid badminton
+
+Using the same training pipeline, we also trained the G1 to play badminton in simulation.
+
+[![Humanoid badminton in simulation](media/badminton/badminton-sim-preview.gif)](media/badminton/badminton-sim.mp4)
+
 ## 1. Environment setup
 
 Requirements: Ubuntu 24.04, [uv](https://docs.astral.sh/uv/getting-started/installation/) and Python 3.13.14. Training requires an NVIDIA GPU compatible with CUDA 12.8.

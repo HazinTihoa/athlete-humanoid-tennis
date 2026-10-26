@@ -1,0 +1,35 @@
+{
+  "model": "BM-034/model_38000",
+  "recorded_on": "2026-10-26",
+  "duration_seconds": 30,
+  "width": 1920,
+  "height": 1080,
+  "fps": 25,
+  "playback_speed": 1,
+  "environment": "MuJoCo deployment simulation",
+  "training_pipeline": [
+    "Teacher reference tracking",
+    "Student distillation",
+    "PPO fine-tuning"
+  ],
+  "preview": {
+    "start_seconds": 3,
+    "duration_seconds": 10,
+    "fps": 10,
+    "width": 480
+  },
+  "files": {
+    "badminton-sim-poster.jpg": {
+      "sha256": "97e7e8facace01d44e6ecfc38a9e9cd5d7996c6426e159718141de20ea498a0f",
+      "bytes": 99002
+    },
+    "badminton-sim-preview.gif": {
+      "sha256": "1df6159f7a38e553f0b2559136a5f71cd4f14dba44457c6dbff8987af52dadcc",
+      "bytes": 572816
+    },
+    "badminton-sim.mp4": {
+      "sha256": "e6b068bf39a82115a7b679dd7c47e6fef67926bc9d70b97f799a441294219a27",
+      "bytes": 4617529
+    }
+  }
+}

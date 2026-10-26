@@ -32,6 +32,12 @@ Unitree G1 反应式全身网球策略的训练与部署代码。
 | --- | --- |
 | [![Real-world rally](media/project-demos/real-rally.gif)](https://hazintihoa.github.io/ATHLETE/assets/video/hero-7strikes-1080.mp4) | [![Mouse-drag ball interaction in simulation](media/project-demos/simulation-drag.gif)](https://hazintihoa.github.io/ATHLETE/assets/video/sim-rally1.mp4) |
 
+### 人形机器人羽毛球
+
+使用相同的训练流程，我们也成功训练了 G1 在仿真中打羽毛球。
+
+[![人形机器人羽毛球仿真](media/badminton/badminton-sim-preview.gif)](media/badminton/badminton-sim.mp4)
+
 ## 1. 环境配置
 
 环境要求：Ubuntu 24.04、[uv](https://docs.astral.sh/uv/getting-started/installation/) 和 Python 3.13.14。训练需要兼容 CUDA 12.8 的 NVIDIA GPU。
